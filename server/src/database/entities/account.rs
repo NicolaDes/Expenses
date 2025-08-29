@@ -12,14 +12,24 @@ pub struct Model {
 
 /// Enum Relation richiesto dal macro, anche se non ci sono relazioni
 #[derive(Copy, Clone, Debug, EnumIter)]
-pub enum Relation {}
+pub enum Relation {
+    Transactions,
+}
 
 /// Implementazione di RelationTrait vuota
 impl RelationTrait for Relation {
     fn def(&self) -> RelationDef {
-        panic!("This entity has no relations");
+        match self {
+            Self::Transactions => Entity::has_many(super::transaction::Entity).into(),
+        }
     }
 }
 
 /// Comportamento di default per ActiveModel
 impl ActiveModelBehavior for ActiveModel {}
+
+impl Related<super::transaction::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Transactions.def()
+    }
+}

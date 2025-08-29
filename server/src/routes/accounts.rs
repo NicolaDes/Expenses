@@ -1,8 +1,7 @@
 use askama::Template;
 use axum::response::{IntoResponse, Redirect};
-use axum::routing::{get, post};
+use axum::Form;
 use axum::{response::Html, Extension};
-use axum::{Form, Router};
 use sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
 
 use crate::database::account::ActiveModel;
@@ -21,16 +20,9 @@ struct NewAccountTemplate;
 
 /// Form data che arriva dall’HTML
 #[derive(serde::Deserialize)]
-struct NewAccountForm {
+pub struct NewAccountForm {
     name: String,
     balance: f64,
-}
-
-pub fn router() -> Router {
-    Router::new()
-        .route("/", get(get_all_accounts_handler))
-        .route("/new", get(new_account_form))
-        .route("/", post(create_account))
 }
 
 pub async fn get_all_accounts_handler(
@@ -49,11 +41,11 @@ pub async fn get_all_accounts_handler(
     Ok(Html(html))
 }
 
-async fn new_account_form() -> impl IntoResponse {
+pub async fn new_account_form() -> impl IntoResponse {
     Html(NewAccountTemplate.render().unwrap())
 }
 
-async fn create_account(
+pub async fn create_account(
     Extension(db): Extension<DatabaseConnection>,
     Form(form): Form<NewAccountForm>,
 ) -> impl IntoResponse {
