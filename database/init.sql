@@ -1,0 +1,2 @@
+CREATE DATABASE expenses;
+\q

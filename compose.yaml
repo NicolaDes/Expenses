@@ -1,0 +1,25 @@
+services:
+  expenses-database:
+    image: postgres:16
+    container_name: expenses-database
+    volumes:
+      - ./database/.database-data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      - POSTGRES_DB=expenses
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+
+  expenses-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: expenses-api
+    ports:
+      - "7000:7000"
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@expenses-db:5432/postgres
+    depends_on:
+      - expenses-database
