@@ -30,10 +30,17 @@
 
         <label for="date">Date:</label>
         <input type="datetime-local" name="date" required><br>
-
+        <label for="category_id">Category:</label>
+        <select name="category_id" required>
+            <option value="">-- Select a Category --</option>
+            {% for category in categories %}
+            <option value="{{ category.id }}">
+                {{ category.category }} - {{ category.macro_category }}
+            </option>
+            {% endfor %}
+        </select><br>
         <button type="submit">Add Transaction</button>
     </form>
-
 
     <a href="/accounts">Back to Accounts</a>
 

@@ -1,24 +1,25 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "accounts")]
+#[sea_orm(table_name = "categories")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
-    pub name: String,
-    pub balance: f64,
+    pub transaction_type: String,
+    pub macro_category: String,
+    pub category: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(has_many = "super::transaction::Entity")]
-    Transactions,
+    Transaction,
 }
 
 impl ActiveModelBehavior for ActiveModel {}
 
 impl Related<super::transaction::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Transactions.def()
+        Relation::Transaction.def()
     }
 }

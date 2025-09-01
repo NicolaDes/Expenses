@@ -7,6 +7,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub account_id: i32,
+    pub category_id: Option<i32>,
     pub value: f64,
     pub description: String,
     pub date: DateTime,
@@ -14,20 +15,20 @@ pub struct Model {
     pub label: String,
 }
 
-#[derive(Copy, Clone, Debug, EnumIter)]
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
+    #[sea_orm(
+        belongs_to = "super::account::Entity",
+        from = "Column::AccountId",
+        to = "super::account::Column::Id"
+    )]
     Account,
-}
-
-impl RelationTrait for Relation {
-    fn def(&self) -> RelationDef {
-        match self {
-            Self::Account => Entity::belongs_to(account::Entity)
-                .from(Column::AccountId)
-                .to(account::Column::Id)
-                .into(),
-        }
-    }
+    #[sea_orm(
+        belongs_to = "super::category::Entity",
+        from = "Column::CategoryId",
+        to = "super::category::Column::Id"
+    )]
+    Category,
 }
 
 impl ActiveModelBehavior for ActiveModel {}
@@ -35,5 +36,11 @@ impl ActiveModelBehavior for ActiveModel {}
 impl Related<account::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Account.def()
+    }
+}
+
+impl Related<super::category::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Category.def()
     }
 }

@@ -18,7 +18,6 @@ struct AccountsTemplate<'a> {
 #[template(path = "new_account.html")]
 struct NewAccountTemplate;
 
-/// Form data che arriva dall’HTML
 #[derive(serde::Deserialize)]
 pub struct NewAccountForm {
     name: String,

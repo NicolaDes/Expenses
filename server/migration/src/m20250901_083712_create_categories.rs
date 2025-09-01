@@ -9,17 +9,26 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(Accounts::Table)
+                    .table(Categories::Table)
                     .if_not_exists()
                     .col(
-                        ColumnDef::new(Accounts::Id)
+                        ColumnDef::new(Categories::Id)
                             .integer()
                             .not_null()
                             .auto_increment()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(Accounts::Name).string().not_null())
-                    .col(ColumnDef::new(Accounts::Balance).double().not_null())
+                    .col(
+                        ColumnDef::new(Categories::TransactionType)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(Categories::MacroCategory)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(ColumnDef::new(Categories::Category).string().not_null())
                     .to_owned(),
             )
             .await
@@ -27,15 +36,16 @@ impl MigrationTrait for Migration {
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_table(Table::drop().table(Accounts::Table).to_owned())
+            .drop_table(Table::drop().table(Categories::Table).to_owned())
             .await
     }
 }
 
 #[derive(Iden)]
-enum Accounts {
+enum Categories {
     Table,
     Id,
-    Name,
-    Balance,
+    TransactionType,
+    MacroCategory,
+    Category,
 }

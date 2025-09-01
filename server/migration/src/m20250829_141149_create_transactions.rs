@@ -1,11 +1,4 @@
-use sea_orm_migration::{prelude::*, schema::*};
-
-#[derive(Iden)]
-enum Accounts {
-    // rappresenta la tabella accounts esistente
-    Table,
-    Id,
-}
+use sea_orm_migration::prelude::*;
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -26,6 +19,14 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Transactions::AccountId).integer().not_null())
+                    .col(ColumnDef::new(Transactions::CategoryId).integer().null())
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk_transactions_category")
+                            .from(Transactions::Table, Transactions::CategoryId)
+                            .to(Categories::Table, Categories::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
+                    )
                     .col(ColumnDef::new(Transactions::Value).double().not_null())
                     .col(
                         ColumnDef::new(Transactions::Description)
@@ -59,10 +60,23 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(Iden)]
+enum Accounts {
+    Table,
+    Id,
+}
+
+#[derive(Iden)]
+enum Categories {
+    Table,
+    Id,
+}
+
+#[derive(Iden)]
 enum Transactions {
     Table,
     Id,
     AccountId,
+    CategoryId,
     Value,
     Description,
     Date,
