@@ -1,0 +1,73 @@
+{% extends "base_account.html" %}
+
+{% block title %}Account: {{ account.name }}{% endblock %}
+
+{% block content %}
+<h1>{{ account.name }}</h1>
+
+<div class="account-page-container">
+    <!-- Lista Transazioni -->
+    <section class="transactions-section">
+        <h2>Transazioni</h2>
+        <table class="transactions-table">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Descrizione</th>
+                    <th>Categoria</th>
+                    <th>Valore</th>
+                    <th>Percentuale esclusa</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in transactions %}
+                <tr>
+                    <td>{{ t.txt.date }}</td>
+                    <td>{{ t.txt.description }}</td>
+                    <td>{{ t.category_name }}</td>
+                    <td>{{ t.txt.value }}</td>
+                    <td>{{ t.txt.perc_to_exclude }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <!-- Riquadro Statistiche -->
+    <section class="stats-section">
+        <h2>Statistiche</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Saldo Totale</h3>
+                <p>{{ account.balance }}</p>
+            </div>
+            <div class="stat-card">
+                <h3>Totale Entrate</h3>
+                <p>{{ total_income }}</p>
+            </div>
+            <div class="stat-card">
+                <h3>Totale Uscite</h3>
+                <p>{{ total_expense }}</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="form-section upload-section">
+        <h2>Carica Transazioni</h2>
+        <form class="minimal-form" action="/accounts/{{ account.id }}/upload" method="post"
+            enctype="multipart/form-data">
+            <div class="form-row">
+                <label for="transaction-file">File CSV/Excel</label>
+                <div class="dropzone">
+                    Trascina qui il file o clicca per selezionarlo
+                    <input id="transaction-file" type="file" name="file" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <button type="submit" class="btn-submit">Carica</button>
+            </div>
+        </form>
+    </section>
+
+</div>
+{% endblock %}

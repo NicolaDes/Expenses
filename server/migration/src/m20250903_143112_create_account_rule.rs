@@ -28,6 +28,13 @@ impl MigrationTrait for Migration {
                             .to(Rules::Table, Rules::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
+                    .index(
+                        Index::create()
+                            .name("idx-unique-account-rule")
+                            .col(AccountRules::AccountId)
+                            .col(AccountRules::RuleId)
+                            .unique(),
+                    )
                     .to_owned(),
             )
             .await

@@ -1,0 +1,15 @@
+.stats-grid {
+    display: flex;
+    gap: var(--stats-gap, 20px);
+    margin-bottom: var(--stats-margin-bottom, 30px);
+}
+
+.stat-card {
+    flex: 1;
+    padding: var(--stat-card-padding, 20px);
+    background: var(--stat-card-bg, #fff);
+    border-radius: var(--stat-card-radius, var(--radius-md));
+    box-shadow: var(--stat-card-shadow, var(--shadow-sm));
+    text-align: var(--stat-card-text-align, center);
+    color: var(--stat-card-text-color, var(--color-text));
+}

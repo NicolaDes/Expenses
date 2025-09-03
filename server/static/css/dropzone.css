@@ -1,0 +1,19 @@
+.dropzone {
+    border: 2px dashed var(--color-dropzone-border);
+    padding: var(--dropzone-padding, 24px);
+    min-height: var(--dropzone-min-height, 100px);
+    margin-bottom: var(--dropzone-margin-bottom, 24px);
+    background: var(--dropzone-bg, #fff);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    color: var(--color-dropzone-text);
+    font-weight: var(--dropzone-font-weight, 500);
+    transition: all var(--dropzone-transition-duration, 0.3s) ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.dropzone:hover {
+    border-color: var(--color-dropzone-border);
+    background: var(--color-dropzone-hover-bg);
+    transform: scale(var(--dropzone-hover-scale, 1.02));
+}

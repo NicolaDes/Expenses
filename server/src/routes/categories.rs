@@ -6,8 +6,9 @@ use crate::database::entities::category;
 
 #[derive(Template)]
 #[template(path = "categories.html")]
-struct CategoriesTemplate {
+struct CategoriesTemplate<'a> {
     categories: Vec<category::Model>,
+    menu: &'a str,
 }
 
 #[derive(serde::Deserialize)]
@@ -27,7 +28,10 @@ pub async fn get_categories_handler(
             return Err(axum::http::StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
-    let html = CategoriesTemplate { categories };
+    let html = CategoriesTemplate {
+        categories,
+        menu: "categories",
+    };
     Ok(axum::response::Html(html.render().unwrap()))
 }
 

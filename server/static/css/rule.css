@@ -1,0 +1,22 @@
+.rule {
+    padding: var(--rule-padding, 12px 16px);
+    border: 1px solid var(--rule-border, var(--color-rule-border));
+    margin: var(--rule-margin, 8px 0);
+    border-radius: var(--rule-radius, var(--radius-md));
+    background: var(--rule-bg, var(--color-rule-bg));
+    color: var(--rule-text-color, var(--color-text));
+    cursor: grab;
+    transition: all var(--rule-transition, 0.25s) ease;
+    box-shadow: var(--rule-shadow, var(--shadow-sm));
+}
+
+.rule:hover {
+    background: var(--rule-hover-bg, var(--color-rule-hover-bg));
+    transform: translateY(var(--rule-hover-translate, -2px));
+}
+
+.rule:active {
+    cursor: grabbing;
+    background: var(--rule-active-bg, var(--color-rule-active-bg));
+    transform: scale(var(--rule-active-scale, 0.97));
+}

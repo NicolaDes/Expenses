@@ -1,0 +1,58 @@
+.form-section {
+    background: var(--color-form-bg);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.minimal-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--form-gap, 12px);
+}
+
+.form-row {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-row label {
+    font-weight: 500;
+    margin-bottom: var(--form-label-margin-bottom, 4px);
+    color: var(--form-label-color, var(--color-text));
+}
+
+.form-row input,
+.form-row select {
+    padding: var(--form-input-padding, 8px 12px);
+    border: 1px solid var(--form-input-border, #ddd);
+    border-radius: var(--radius-sm);
+    font-size: var(--form-font-size, 14px);
+    transition: all var(--form-transition-duration, 0.2s) ease;
+    background: var(--color-input-bg);
+    border: 1px solid var(--color-input-border);
+    color: var(--color-text);
+}
+
+.form-row input:focus,
+.form-row select:focus {
+    border-color: var(--color-navbar-active-bg);
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+    outline: none;
+}
+
+.minimal-form button {
+    background: var(--color-navbar-active-bg);
+    color: var(--form-button-color, #fff);
+    padding: var(--form-button-padding, 10px 16px);
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--form-button-transition, 0.2s) ease;
+}
+
+.minimal-form button:hover {
+    background: var(--color-navbar-hover-text);
+}

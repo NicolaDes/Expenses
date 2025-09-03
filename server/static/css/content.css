@@ -1,0 +1,12 @@
+.content {
+    max-width: var(--content-max-width, 1100px);
+    margin: var(--content-margin, 50px auto);
+    padding: var(--content-padding, 20px);
+}
+
+h1,
+h2 {
+    color: var(--color-heading);
+    font-weight: var(--heading-font-weight, 600);
+    margin-bottom: var(--heading-margin-bottom, 20px);
+}

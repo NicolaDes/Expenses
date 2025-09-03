@@ -1,0 +1,47 @@
+{% extends "base_account.html" %}
+
+{% block title %}Budgets for {{ account.name }}{% endblock %}
+
+{% block content %}
+
+<div class="budget-page-container">
+    <section class="budgets-section">
+        <h2>Transazioni</h2>
+        <table class="budgets-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in budgets %}
+                <tr>
+                    <td>{{ b.name }}</td>
+                    <td>{{ b.value }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="form-section">
+        <h2>Add New Budget</h2>
+        <form class="minimal-form" method="post" action="/accounts/{{ account.id }}/budgets">
+            <div class="form-row">
+                <label for="budget-name">Name</label>
+                <input id="budget-name" type="text" name="name" required>
+            </div>
+            <div class="form-row">
+                <label for="budget-value">Value</label>
+                <input id="budget-value" type="number" step="0.01" name="value" required>
+            </div>
+            <div class="form-row">
+                <button type="submit" class="btn-submit">Add Budget</button>
+            </div>
+        </form>
+    </section>
+
+</div>
+
+{% endblock %}
