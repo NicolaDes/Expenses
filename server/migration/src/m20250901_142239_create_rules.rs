@@ -24,8 +24,8 @@ impl MigrationTrait for Migration {
                             .on_delete(ForeignKeyAction::Cascade),
                     )
                     .col(ColumnDef::new(Rules::Regexpr).string().null())
-                    .col(ColumnDef::new(Rules::DateStart).timestamp().null())
-                    .col(ColumnDef::new(Rules::DateEnd).timestamp().null())
+                    .col(ColumnDef::new(Rules::DateStart).date().null())
+                    .col(ColumnDef::new(Rules::DateEnd).date().null())
                     .to_owned(),
             )
             .await

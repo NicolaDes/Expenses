@@ -9,14 +9,11 @@ use crate::database::accounts;
 use crate::database::AccountModel;
 
 #[derive(Template)]
-#[template(path = "accounts.html")]
+#[template(path = "account_index.html")]
 struct AccountsTemplate<'a> {
     accounts: &'a [AccountModel],
+    menu: &'a str,
 }
-
-#[derive(Template)]
-#[template(path = "new_account.html")]
-struct NewAccountTemplate;
 
 #[derive(serde::Deserialize)]
 pub struct NewAccountForm {
@@ -33,15 +30,12 @@ pub async fn get_all_accounts_handler(
 
     let html = AccountsTemplate {
         accounts: &accounts,
+        menu: "accounts",
     }
     .render()
     .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     Ok(Html(html))
-}
-
-pub async fn new_account_form() -> impl IntoResponse {
-    Html(NewAccountTemplate.render().unwrap())
 }
 
 pub async fn create_account(
