@@ -1,6 +1,5 @@
 use sea_orm::entity::prelude::*;
 
-/// Entity Account senza relazioni
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "accounts")]
 pub struct Model {
@@ -10,16 +9,28 @@ pub struct Model {
     pub balance: f64,
 }
 
-/// Enum Relation richiesto dal macro, anche se non ci sono relazioni
-#[derive(Copy, Clone, Debug, EnumIter)]
-pub enum Relation {}
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+pub enum Relation {
+    #[sea_orm(has_many = "super::transaction::Entity")]
+    Transactions,
+    #[sea_orm(has_many = "super::account_rule::Entity")]
+    AccountRule,
+}
 
-/// Implementazione di RelationTrait vuota
-impl RelationTrait for Relation {
-    fn def(&self) -> RelationDef {
-        panic!("This entity has no relations");
+impl ActiveModelBehavior for ActiveModel {}
+
+impl Related<super::transaction::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Transactions.def()
     }
 }
 
-/// Comportamento di default per ActiveModel
-impl ActiveModelBehavior for ActiveModel {}
+impl Related<super::rule::Entity> for Entity {
+    fn to() -> RelationDef {
+        super::account_rule::Relation::Rule.def()
+    }
+
+    fn via() -> Option<RelationDef> {
+        Some(super::account_rule::Relation::Account.def().rev())
+    }
+}

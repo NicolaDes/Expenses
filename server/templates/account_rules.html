@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Account Rules</title>
+    <style>
+        .dropzone {
+            border: 2px dashed #ccc;
+            padding: 10px;
+            min-height: 50px;
+            margin-bottom: 20px;
+        }
+
+        .rule {
+            padding: 5px;
+            border: 1px solid #000;
+            margin: 5px 0;
+            cursor: grab;
+        }
+    </style>
+</head>
+
+<body data-account-id="{{ account.id }}">
+
+    <h1>Rules for Account: {{ account.name }}</h1>
+
+    <h2>Active Rules</h2>
+    <div id="active-rules" class="dropzone">
+        {% for rule in active_rules %}
+        <div class="rule" data-rule-id="{{ rule.id }}" draggable="true">
+            {{ rule.name }} - {{ rule.label }}
+        </div>
+        {% endfor %}
+    </div>
+
+    <h2>Inactive Rules</h2>
+    <div id="inactive-rules" class="dropzone">
+        {% for rule in inactive_rules %}
+        <div class="rule" data-rule-id="{{ rule.id }}" draggable="true">
+            {{ rule.name }} - {{ rule.label }}
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const dropzones = document.querySelectorAll('.dropzone');
+            const rules = document.querySelectorAll('.rule');
+            const accountId = document.body.dataset.accountId;
+
+            rules.forEach(rule => {
+                rule.addEventListener('dragstart', e => {
+                    e.dataTransfer.setData('text/plain', rule.dataset.ruleId);
+                });
+            });
+
+            dropzones.forEach(zone => {
+                zone.addEventListener('dragover', e => e.preventDefault());
+
+                zone.addEventListener('drop', async e => {
+                    e.preventDefault();
+                    const ruleId = e.dataTransfer.getData('text/plain');
+                    const target = zone.id === 'active-rules' ? 'activate' : 'deactivate';
+                    const url = `/accounts/${accountId}/rules/${ruleId}/${target}`;
+
+                    try {
+                        const response = await fetch(url, { method: 'POST' });
+                        if (!response.ok) {
+                            console.error('Errore nella richiesta POST:', response.status, response.statusText);
+                            return;
+                        }
+                        const ruleDiv = document.querySelector(`.rule[data-rule-id='${ruleId}']`);
+                        zone.appendChild(ruleDiv);
+                    } catch (err) {
+                        console.error('Errore nella richiesta POST:', err);
+                    }
+                });
+            });
+        });
+    </script>
+
+</body>
+
+</html>
