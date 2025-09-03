@@ -7,6 +7,7 @@ use axum::{
 use crate::routes::{
     account_rules::{activate_rule_handler, deactivate_rule_handler, get_account_rules_handler},
     accounts::{create_account, get_all_accounts_handler, new_account_form},
+    budgets::{add_budget_handler, get_budgets_handler},
     categories::{add_category_handler, get_categories_handler},
     rules::{add_rule_handler, get_rules_handler},
     transactions::{add_transaction_handler, get_account_transactions_handler},
@@ -47,4 +48,6 @@ pub fn router() -> Router {
             "/accounts/{account_id}/rules/{rule_id}/deactivate",
             post(deactivate_rule_handler),
         )
+        .route("/budgets", get(get_budgets_handler))
+        .route("/budgets", post(add_budget_handler))
 }
