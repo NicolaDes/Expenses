@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use sea_orm::entity::prelude::*;
 
 use super::category;
@@ -12,8 +13,8 @@ pub struct Model {
     pub percentage: f32,
     pub category_id: i32,
     pub regexpr: Option<String>,
-    pub date_start: Option<Date>,
-    pub date_end: Option<Date>,
+    pub date_start: Option<NaiveDate>,
+    pub date_end: Option<NaiveDate>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

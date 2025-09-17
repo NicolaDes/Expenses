@@ -1,0 +1,27 @@
+.sub-navbar {
+    display: flex;
+    justify-content: center;
+    gap: var(--sub-navbar-gap, 20px);
+    background: var(--sub-navbar-bg, var(--color-navbar-bg));
+    border-bottom: 1px solid var(--sub-navbar-border, var(--color-navbar-border));
+    padding: var(--sub-navbar-padding, 10px 20px);
+}
+
+.sub-navbar a {
+    padding: var(--sub-navbar-link-padding, 6px 12px);
+    text-decoration: none;
+    color: var(--sub-navbar-link-color, var(--color-navbar-link));
+    border-radius: var(--sub-navbar-link-radius, var(--radius-sm));
+    transition: all 0.25s ease;
+}
+
+.sub-navbar a:hover {
+    background: var(--sub-navbar-hover-bg, var(--color-navbar-hover-bg));
+    color: var(--sub-navbar-hover-text, var(--color-navbar-hover-text));
+}
+
+.sub-navbar a.active {
+    background: var(--sub-navbar-active-bg, var(--color-navbar-active-bg));
+    color: var(--sub-navbar-active-text, var(--color-navbar-active-text));
+    font-weight: var(--sub-navbar-active-font-weight, 600);
+}

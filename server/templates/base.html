@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}My App{% endblock %}</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<body {% block body_attrs %}{% endblock %}>
+    <nav class="navbar">
+        <div class="navbar-left">
+            <select id="theme-selector">
+                <option value="default">Default</option>
+                <option value="dark">Dark</option>
+                <option value="violet">Violet</option>
+            </select>
+        </div>
+
+        <div class="navbar-center">
+            <a href="/accounts" {% if menu=="accounts" %}class="active" {% endif %}>Accounts</a>
+            <a href="/budgets" {% if menu=="budgets" %}class="active" {% endif %}>Budgets</a>
+            <a href="/categories" {% if menu=="categories" %}class="active" {% endif %}>Categories</a>
+            <a href="/rules" {% if menu=="rules" %}class="active" {% endif %}>Rules</a>
+        </div>
+        <div class="navbar-right"> {% block navbar_right %}…{% endblock %} </div>
+    </nav>
+
+    {% block sub_navbar %}{% endblock %}
+
+    <main class="content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        const selector = document.getElementById('theme-selector');
+
+        // Imposta tema salvato se presente
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            selector.value = savedTheme;
+        }
+
+        // Cambia tema al selezionare un'opzione
+        selector.addEventListener('change', (e) => {
+            const theme = e.target.value;
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme); // salva preferenza
+        });
+    </script>
+
+</body>
+
+</html>

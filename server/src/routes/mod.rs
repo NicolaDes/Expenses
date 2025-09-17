@@ -1,7 +1,8 @@
+pub mod account_budgets;
+pub mod account_detail;
+pub mod account_index;
 pub mod account_rules;
-pub mod accounts;
-pub mod budgets;
+pub mod account_transactions;
 pub mod categories;
+pub mod index;
 pub mod routes;
-pub mod rules;
-pub mod transactions;

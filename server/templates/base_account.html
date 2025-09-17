@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block navbar_right %}
+<div class="account-info">{{ account.name }}</div>
+{% endblock %}
+
+{% block sub_navbar %}
+<nav class="sub-navbar">
+    <a href="/accounts/{{ account.id }}" {% if sub_menu=="detail" %}class="active" {% endif %}>Detail</a>
+    <a href="/accounts/{{ account.id }}/transactions" {% if sub_menu=="transactions" %}class="active" {% endif
+        %}>Transactions</a>
+    <a href="/accounts/{{ account.id }}/rules" {% if sub_menu=="rules" %}class="active" {% endif %}>Rules</a>
+    <a href="/accounts/{{ account.id }}/budgets" {% if sub_menu=="budgets" %}class="active" {% endif %}>Budgets</a>
+    <a href="/accounts/{{ account.id }}/settings" {% if sub_menu=="settings" %}class="active" {% endif %}>Settings</a>
+</nav>
+
+{% endblock %}
