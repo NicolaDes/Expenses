@@ -10,8 +10,8 @@ use crate::routes::{
     account_detail::get_account_detail,
     account_index::{create_account, get_all_accounts_handler},
     account_rules::{
-        activate_rule_handler, add_account_rule_handler, deactivate_rule_handler,
-        get_account_rules_handler,
+        activate_rule_handler, add_account_rule_handler, apply_rules, deactivate_rule_handler,
+        get_account_rules_handler, preview_apply_rules, resolve_conflicts_rules,
     },
     account_transactions::{add_transaction_handler, get_account_transactions_handler},
     categories::{add_category_handler, get_categories_handler},
@@ -24,6 +24,7 @@ async fn root_redirect() -> Redirect {
 
 pub fn router() -> Router {
     Router::new()
+        .nest_service("/static", ServeDir::new("static"))
         .route("/", get(root_redirect))
         .route("/accounts", get(get_all_accounts_handler))
         .route("/accounts", post(create_account))
@@ -57,10 +58,21 @@ pub fn router() -> Router {
             "/accounts/{account_id}/rules",
             post(add_account_rule_handler),
         )
-        .nest_service("/static", ServeDir::new("static"))
         .route("/categories", get(get_categories_handler))
         .route("/categories", post(add_category_handler))
         .route("/rules", get(get_index))
         .route("/budgets", get(get_index))
         .route("/accounts/{account_id}/settings", get(get_index))
+        .route(
+            "/accounts/{account_id}/rules/preview_apply_rules",
+            get(preview_apply_rules),
+        )
+        .route(
+            "/accounts/{account_id}/rules/apply_rules",
+            post(apply_rules),
+        )
+        .route(
+            "/accounts/{account_id}/rules/resolve_conflicts",
+            post(resolve_conflicts_rules),
+        )
 }

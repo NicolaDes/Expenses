@@ -7,6 +7,9 @@
 @import url("css/tables.css");
 @import url("css/stats.css");
 @import url("css/dropzone.css");
+@import url("css/modal.css");
+@import url("css/button.css");
+@import url("css/preview.css");
 
 * {
     transition: all 0.2s ease-in-out;

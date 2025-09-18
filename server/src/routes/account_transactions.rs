@@ -13,6 +13,7 @@ use chrono::NaiveDateTime;
 use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
 };
+use serde::Deserialize;
 
 #[derive(Debug)]
 struct TransactionWithCategory {
@@ -37,7 +38,24 @@ pub struct AddTransactionForm {
     perc_to_exclude: f32,
     label: String,
     date: String,
+    #[serde(deserialize_with = "empty_string_as_none")]
     category_id: Option<i32>,
+}
+
+fn empty_string_as_none<'de, D>(deserializer: D) -> Result<Option<i32>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = Option::<String>::deserialize(deserializer)?;
+    if let Some(s) = opt {
+        if s.trim().is_empty() {
+            Ok(None)
+        } else {
+            s.parse::<i32>().map(Some).map_err(serde::de::Error::custom)
+        }
+    } else {
+        Ok(None)
+    }
 }
 
 pub async fn get_account_transactions_handler(

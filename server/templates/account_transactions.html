@@ -64,7 +64,7 @@
 
             <div class="form-row">
                 <label for="tx-category">Category</label>
-                <select id="tx-category" name="category_id" required>
+                <select id="tx-category" name="category_id">
                     <option value="">-- Select a Category --</option>
                     {% for category in categories %}
                     <option value="{{ category.id }}">{{ category.category }} - {{ category.macro_category }}</option>
