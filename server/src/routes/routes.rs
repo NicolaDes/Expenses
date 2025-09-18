@@ -1,6 +1,6 @@
 use axum::{
     response::Redirect,
-    routing::{get, post},
+    routing::{delete, get, post},
     Router,
 };
 use tower_http::services::ServeDir;
@@ -13,7 +13,9 @@ use crate::routes::{
         activate_rule_handler, add_account_rule_handler, apply_rules, deactivate_rule_handler,
         get_account_rules_handler, preview_apply_rules, resolve_conflicts_rules,
     },
-    account_transactions::{add_transaction_handler, get_account_transactions_handler},
+    account_transactions::{
+        add_transaction_handler, delete_transaction, get_account_transactions_handler,
+    },
     categories::{add_category_handler, get_categories_handler},
     index::get_index,
 };
@@ -74,5 +76,9 @@ pub fn router() -> Router {
         .route(
             "/accounts/{account_id}/rules/resolve_conflicts",
             post(resolve_conflicts_rules),
+        )
+        .route(
+            "/accounts/{account_id}/transactions/{transaction_id}",
+            delete(delete_transaction),
         )
 }

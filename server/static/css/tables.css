@@ -14,3 +14,17 @@
 .transactions-table th {
     background-color: var(--transactions-table-th-bg, #f9f9ff);
 }
+
+.transactions-table .delete-btn {
+    background: var(--sub-navbar-active-bg, var(--color-navbar-active-bg));
+    color: white;
+    border: none;
+    padding: 2px 6px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.transactions-table .delete-btn:hover {
+    background: var(--sub-navbar-bg, var(--color-navbar-bg));
+}
