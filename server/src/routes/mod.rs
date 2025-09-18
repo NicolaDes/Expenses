@@ -6,3 +6,4 @@ pub mod account_transactions;
 pub mod categories;
 pub mod index;
 pub mod routes;
+pub mod rules;

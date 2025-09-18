@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Rules{% endblock %}
+
+{% block content %}
+
+<div class="page-container">
+    <section class="rules-section">
+        <h2>Rules</h2>
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Label</th>
+                    <th>Percentage</th>
+                    <th>Category name</th>
+                    <th>Regular Expression</th>
+                    <th>Date Start</th>
+                    <th>Date End</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rule in rules %}
+                <tr class="rule-row" data-id="{{ rule.id }}">
+                    <td>{{ rule.name }}</td>
+                    <td>{{ rule.label }}</td>
+                    <td>{{ rule.percentage }}</td>
+                    <td>{{ rule.category_name }}</td>
+                    <td>{{ rule.regexpr }}</td>
+                    <td>{{ rule.date_start }}</td>
+                    <td>{{ rule.date_end }}</td>
+                    <td><button class="delete-btn">💀</button></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+</div>
+
+<script type="module">
+    import { deleteFromTable } from "/static/script.js";
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll(".delete-btn").forEach(btn => {
+            btn.addEventListener("click", async e => {
+                const row = e.target.closest(".rule-row");
+                const id = row.dataset.id;
+                const path = `/rules/${id}`;
+                const message = `Sei sicuro di voler eliminare questa regola?`;
+
+                deleteFromTable(path, message, row);
+            });
+        });
+    });
+</script>
+{% endblock %}

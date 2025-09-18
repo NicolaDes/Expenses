@@ -1,21 +1,21 @@
-.transactions-table {
+.custom-table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: var(--transactions-table-margin-bottom, 30px);
+    margin-bottom: var(--custom-table-margin-bottom, 30px);
 }
 
-.transactions-table th,
-.transactions-table td {
-    border: 1px solid var(--transactions-table-border, #ddd);
-    padding: var(--transactions-table-cell-padding, 8px);
+.custom-table th,
+.custom-table td {
+    border: 1px solid var(--custom-table-border, #ddd);
+    padding: var(--custom-table-cell-padding, 8px);
     text-align: left;
 }
 
-.transactions-table th {
-    background-color: var(--transactions-table-th-bg, #f9f9ff);
+.custom-table th {
+    background-color: var(--custom-table-th-bg, #f9f9ff);
 }
 
-.transactions-table .delete-btn {
+.custom-table .delete-btn {
     background: var(--sub-navbar-active-bg, var(--color-navbar-active-bg));
     color: white;
     border: none;
@@ -25,6 +25,6 @@
     transition: background-color 0.2s;
 }
 
-.transactions-table .delete-btn:hover {
+.custom-table .delete-btn:hover {
     background: var(--sub-navbar-bg, var(--color-navbar-bg));
 }

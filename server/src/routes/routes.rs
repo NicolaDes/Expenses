@@ -18,6 +18,7 @@ use crate::routes::{
     },
     categories::{add_category_handler, get_categories_handler},
     index::get_index,
+    rules::{delete_rule, get_rules_handler},
 };
 
 async fn root_redirect() -> Redirect {
@@ -62,7 +63,8 @@ pub fn router() -> Router {
         )
         .route("/categories", get(get_categories_handler))
         .route("/categories", post(add_category_handler))
-        .route("/rules", get(get_index))
+        .route("/rules", get(get_rules_handler))
+        .route("/rules/{rule_id}", delete(delete_rule))
         .route("/budgets", get(get_index))
         .route("/accounts/{account_id}/settings", get(get_index))
         .route(
