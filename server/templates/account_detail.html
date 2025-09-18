@@ -6,17 +6,16 @@
 <h1>{{ account.name }}</h1>
 
 <div class="account-page-container">
-    <!-- Lista Transazioni -->
     <section class="transactions-section">
-        <h2>Transazioni</h2>
+        <h2>Transactions</h2>
         <table class="custom-table">
             <thead>
                 <tr>
-                    <th>Data</th>
-                    <th>Descrizione</th>
-                    <th>Categoria</th>
-                    <th>Valore</th>
-                    <th>Percentuale esclusa</th>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Value</th>
+                    <th>Excluded percentage</th>
                 </tr>
             </thead>
             <tbody>
@@ -25,7 +24,7 @@
                     <td>{{ t.txt.date }}</td>
                     <td>{{ t.txt.description }}</td>
                     <td>{{ t.category_name }}</td>
-                    <td>{{ t.txt.value }}</td>
+                    <td>{{ t.txt.value }} €</td>
                     <td>{{ t.txt.perc_to_exclude }}%</td>
                 </tr>
                 {% endfor %}
@@ -33,7 +32,6 @@
         </table>
     </section>
 
-    <!-- Riquadro Statistiche -->
     <section class="stats-section">
         <h2>Statistiche</h2>
         <div class="stats-grid">
@@ -53,7 +51,7 @@
     </section>
 
     <section class="form-section upload-section">
-        <h2>Carica Transazioni</h2>
+        <h2>Upload Transactions</h2>
         <form class="minimal-form" action="/accounts/{{ account.id }}/upload" method="post"
             enctype="multipart/form-data">
             <div class="form-row">

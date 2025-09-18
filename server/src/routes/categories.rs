@@ -1,5 +1,9 @@
 use askama::Template;
-use axum::{response::Redirect, Extension, Form};
+use axum::{
+    extract::Path,
+    response::{IntoResponse, Redirect},
+    Extension, Form,
+};
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, DatabaseConnection, EntityTrait};
 
 use crate::database::entities::category;
@@ -51,4 +55,17 @@ pub async fn add_category_handler(
         return Err(axum::http::StatusCode::BAD_REQUEST);
     }
     Ok(Redirect::to(&format!("/categories",)))
+}
+
+pub async fn delete_category(
+    Path(category_id): Path<i32>,
+    Extension(db): Extension<DatabaseConnection>,
+) -> impl IntoResponse {
+    match category::Entity::delete_by_id(category_id).exec(&db).await {
+        Ok(_) => axum::http::StatusCode::NO_CONTENT,
+        Err(err) => {
+            eprintln!("Errore eliminando transazione {}: {}", category_id, err);
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR
+        }
+    }
 }

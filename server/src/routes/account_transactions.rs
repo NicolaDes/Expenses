@@ -6,7 +6,7 @@ use askama::Template;
 use axum::{
     extract::{Extension, Path},
     http::StatusCode,
-    response::{Html, IntoResponse, Redirect},
+    response::{Html, Redirect},
     Form,
 };
 use chrono::NaiveDateTime;
@@ -141,20 +141,4 @@ pub async fn add_transaction_handler(
         "/accounts/{}/transactions",
         account_id
     )))
-}
-
-pub async fn delete_transaction(
-    Path((_account_id, transaction_id)): Path<(i32, i32)>,
-    Extension(db): Extension<DatabaseConnection>,
-) -> impl IntoResponse {
-    match transaction::Entity::delete_by_id(transaction_id)
-        .exec(&db)
-        .await
-    {
-        Ok(_) => axum::http::StatusCode::NO_CONTENT,
-        Err(err) => {
-            eprintln!("Errore eliminando transazione {}: {}", transaction_id, err);
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR
-        }
-    }
 }

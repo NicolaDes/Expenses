@@ -2,11 +2,33 @@
 {% block title %}Categories{% endblock %}
 {% block content %}
 <h1>Categories</h1>
-<ul>
-    {% for category in categories %}
-    <li>{{ category.transaction_type }} - {{ category.macro_category }} - {{ category.category }}</li>
-    {% endfor %}
-</ul>
+
+<div class="page-container">
+    <section class="categories-section">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Transaction Type</th>
+                    <th>Macro Category</th>
+                    <th>Category</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category in categories %}
+                <tr class="category-row" data-id="{{ category.id }}">
+                    <td>{{ category.transaction_type }}</td>
+                    <td>{{ category.macro_category }}</td>
+                    <td>{{ category.category }}</td>
+                    <td><button class="delete-btn">💀</button></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+</div>
+
 
 <section class="form-section add-category-form">
     <h2>Add New Category</h2>
@@ -33,5 +55,21 @@
 
     </form>
 </section>
+
+<script type="module">
+    import { deleteFromTable } from "/static/script.js";
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll(".delete-btn").forEach(btn => {
+            btn.addEventListener("click", async e => {
+                const row = e.target.closest(".category-row");
+                const id = row.dataset.id;
+                const path = `/categories/${id}`;
+                const message = `Sei sicuro di voler eliminare questa categoria?`;
+
+                deleteFromTable(path, message, row);
+            });
+        });
+    });
+</script>
 
 {% endblock %}
