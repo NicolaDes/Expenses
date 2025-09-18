@@ -6,27 +6,28 @@
 <h1>{{ account.name }}</h1>
 
 <div class="account-page-container">
-    <!-- Lista Transazioni -->
     <section class="transactions-section">
-        <h2>Transazioni</h2>
-        <table class="transactions-table">
+        <h2>Transactions</h2>
+        <table class="custom-table">
             <thead>
                 <tr>
-                    <th>Data</th>
-                    <th>Descrizione</th>
-                    <th>Categoria</th>
-                    <th>Valore</th>
-                    <th>Percentuale esclusa</th>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Value</th>
+                    <th>Excluded percentage</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
                 {% for t in transactions %}
-                <tr>
+                <tr class="transaction-row" data-id="{{ t.txt.id }}">
                     <td>{{ t.txt.date }}</td>
                     <td>{{ t.txt.description }}</td>
                     <td>{{ t.category_name }}</td>
-                    <td>{{ t.txt.value }}</td>
+                    <td>{{ t.txt.value }} €</td>
                     <td>{{ t.txt.perc_to_exclude }}%</td>
+                    <td><button class="delete-btn">💀</button></td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -80,4 +81,21 @@
     </section>
 
 </div>
+
+<script type="module">
+    import { deleteFromTable } from "/static/script.js";
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll(".delete-btn").forEach(btn => {
+            btn.addEventListener("click", async e => {
+                const row = e.target.closest(".transaction-row");
+                const id = row.dataset.id;
+                const accountId = document.body.dataset.accountId;
+                const path = `/transactions/${id}`;
+                const message = `Sei sicuro di voler eliminare questa transazione?`;
+
+                deleteFromTable(path, message, row);
+            });
+        });
+    });
+</script>
 {% endblock %}

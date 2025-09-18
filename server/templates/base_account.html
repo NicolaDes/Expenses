@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block body_attrs %}data-account-id="{{ account.id }}"{% endblock %}
+
 {% block navbar_right %}
 <div class="account-info">{{ account.name }}</div>
 {% endblock %}

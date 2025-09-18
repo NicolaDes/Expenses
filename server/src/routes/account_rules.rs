@@ -253,13 +253,13 @@ pub async fn preview_apply_rules(
         .filter(transaction::Column::CategoryId.is_null())
         .all(&db)
         .await
-        .expect("Errore nella lettura delle transazioni non categorizzate!");
+        .expect("Error reading uncategorized transactions!");
 
     let active_rules_raw = account::Entity::find_by_id(account_id)
         .find_with_related(rule::Entity)
         .all(&db)
         .await
-        .expect("Errore nel leggere le regole attive");
+        .expect("Error reading active rules");
 
     let active_rules: Vec<rule::Model> = active_rules_raw
         .into_iter()
@@ -329,13 +329,13 @@ pub async fn apply_rules(
         .filter(transaction::Column::CategoryId.is_null())
         .all(&db)
         .await
-        .expect("Errore nella lettura delle transazioni non categorizzate!");
+        .expect("Error reading uncategorized transactions!");
 
     let active_rules_raw = account::Entity::find_by_id(account_id)
         .find_with_related(rule::Entity)
         .all(&db)
         .await
-        .expect("Errore nel leggere le regole attive");
+        .expect("Error reading active rules!");
 
     let active_rules: Vec<rule::Model> = active_rules_raw
         .into_iter()
@@ -371,7 +371,7 @@ pub async fn resolve_conflicts_rules(
         .find_with_related(rule::Entity)
         .all(&db)
         .await
-        .expect("Errore nel leggere le regole attive");
+        .expect("Error reading active rules!");
 
     let active_rules: Vec<rule::Model> = active_rules_raw
         .into_iter()
@@ -382,7 +382,7 @@ pub async fn resolve_conflicts_rules(
         let transaction = transaction::Entity::find_by_id(item.transaction_id)
             .all(&db)
             .await
-            .expect("Errore nella lettura della transazione")[0]
+            .expect("Error reading transaction!")[0]
             .clone();
         let applicable_rules = get_applayable_rules(transaction.clone(), active_rules.clone());
 
@@ -393,7 +393,7 @@ pub async fn resolve_conflicts_rules(
         let the_rule: rule::Model = rule::Entity::find_by_id(item.rule_id)
             .all(&db)
             .await
-            .expect("Errore nella lettura della regola")[0]
+            .expect("Error reading rule!")[0]
             .clone();
         let mut the_transaction: transaction::ActiveModel = transaction.into();
 
@@ -401,7 +401,7 @@ pub async fn resolve_conflicts_rules(
         the_transaction.perc_to_exclude = Set(the_rule.percentage);
         the_transaction.category_id = Set(Some(the_rule.category_id));
 
-        let _ =the_transaction.update(&db).await.map_err(|err| {
+        let _ = the_transaction.update(&db).await.map_err(|err| {
             eprint!("Cannot update transaction: {}", err);
             StatusCode::INTERNAL_SERVER_ERROR
         });

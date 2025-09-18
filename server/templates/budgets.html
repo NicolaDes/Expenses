@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Budgets{% endblock %}
+
+{% block content %}
+
+<div class="page-container">
+    <section class="budgets-section">
+        <h2>Budgets</h2>
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Value</th>
+                    <th>Related Account</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for budget in budgets %}
+                <tr class="budget-row" data-id="{{ budget.model.id }}">
+                    <td>{{ budget.model.name }}</td>
+                    <td>{{ budget.model.value }} €</td>
+                    <td>{{ budget.account_name }}</td>
+                    <td><button class="delete-btn">💀</button></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+</div>
+
+<script type="module">
+    import { deleteFromTable } from "/static/script.js";
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll(".delete-btn").forEach(btn => {
+            btn.addEventListener("click", async e => {
+                const row = e.target.closest(".budget-row");
+                const id = row.dataset.id;
+                const path = `/budgets/${id}`;
+                const message = `Sei sicuro di voler eliminare questa regola?`;
+
+                deleteFromTable(path, message, row);
+            });
+        });
+    });
+</script>
+{% endblock %}

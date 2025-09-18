@@ -1,15 +1,16 @@
 use askama::Template;
+use axum::extract::Path;
 use axum::response::{IntoResponse, Redirect};
 use axum::Form;
 use axum::{response::Html, Extension};
-use sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 
-use crate::database::account::ActiveModel;
+use crate::database::account::{self, ActiveModel};
 use crate::database::accounts;
 use crate::database::AccountModel;
 
 #[derive(Template)]
-#[template(path = "account_index.html")]
+#[template(path = "accounts.html")]
 struct AccountsTemplate<'a> {
     accounts: &'a [AccountModel],
     menu: &'a str,
@@ -53,6 +54,19 @@ pub async fn create_account(
         Err(e) => {
             eprintln!("Error inserting account: {}", e);
             Html("Failed to create account".to_string()).into_response()
+        }
+    }
+}
+
+pub async fn delete_account(
+    Path(account_id): Path<i32>,
+    Extension(db): Extension<DatabaseConnection>,
+) -> impl IntoResponse {
+    match account::Entity::delete_by_id(account_id).exec(&db).await {
+        Ok(_) => axum::http::StatusCode::NO_CONTENT,
+        Err(err) => {
+            eprintln!("Errore eliminando transazione {}: {}", account_id, err);
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR
         }
     }
 }

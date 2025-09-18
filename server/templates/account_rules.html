@@ -2,15 +2,7 @@
 
 {⅜ block title %}Rules in {{ account.name }} {⅜ endblock %}
 
-{% block body_attrs %}data-account-id="{{ account.id }}"{% endblock %}
-
 {% block content %}
-
-<div style="display: flex; justify-content: space-between; align-items: center;">
-    <h2>Transactions</h2>
-    <button id="apply-rules-btn" class="btn-submit">Apply Rules</button>
-</div>
-
 
 <div id="apply-rules-modal" class="modal hidden">
     <div class="modal-content">
@@ -26,6 +18,10 @@
 </div>
 
 
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <h2>Active Rules</h2>
+    <button id="apply-rules-btn" class="btn-submit">Apply Rules</button>
+</div>
 <div id="active-rules" class="dropzone">
     {% for rule in active_rules %}
     <div class="rule" data-rule-id="{{ rule.id }}" draggable="true">
@@ -47,7 +43,7 @@
 </div>
 
 <div id="uncagorized-transactions" class="transaction-box">
-    <table class="transactions-table">
+    <table class="custom-table">
         <thead>
             <tr>
                 <th>Data</th>

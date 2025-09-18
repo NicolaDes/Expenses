@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Accounts{% endblock %}
+
+{% block content %}
+
+
+<div class="page-container">
+    <h1>Accounts</h1>
+
+    <section class="accounts-section">
+        <h2>Accounts</h2>
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Value</th>
+                    <th>Related Account</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for account in accounts %}
+                <tr class="account-row" data-id="{{ account.id }}">
+                    <td><a href="/accounts/{{ account.id }}">{{ account.name }}</a></td>
+                    <td>{{ account.balance }} €</td>
+                    <td><button class="delete-btn">💀</button></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+
+    <section class="form-section new-account-form">
+        <h2>Add a New Account</h2>
+        <form class="minimal-form" action="/accounts" method="post">
+            <div class="form-row">
+                <label for="account-name">Name</label>
+                <input id="account-name" type="text" name="name" required>
+            </div>
+
+            <div class="form-row">
+                <label for="account-balance">Balance</label>
+                <input id="account-balance" type="number" step="0.01" name="balance" required>
+            </div>
+
+            <div class="form-row">
+                <button type="submit" class="btn-submit">Create</button>
+            </div>
+        </form>
+    </section>
+
+</div>
+
+
+<script type="module">
+    import { deleteFromTable } from "/static/script.js";
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll(".delete-btn").forEach(btn => {
+            btn.addEventListener("click", async e => {
+                const row = e.target.closest(".account-row");
+                const id = row.dataset.id;
+                const path = `/accounts/${id}`;
+                const message = `Sei sicuro di voler eliminare questo account?`;
+
+                deleteFromTable(path, message, row);
+            });
+        });
+    });
+</script>
+
+{% endblock %}
