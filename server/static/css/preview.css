@@ -1,0 +1,38 @@
+.preview-item {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 10px;
+    padding: 6px 0;
+    align-items: center;
+    font-family: sans-serif;
+}
+
+.preview-item .old-values {
+    color: red;
+    display: flex;
+    gap: 8px;
+}
+
+.preview-item .arrow {
+    font-weight: bold;
+    text-align: center;
+}
+
+.preview-item .new-values {
+    color: green;
+    display: flex;
+    gap: 8px;
+}
+
+.preview-item .conflicts {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+    color: orange;
+    font-size: 0.9em;
+}
+
+.preview-item .conflicts div {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
