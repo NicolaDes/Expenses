@@ -1,6 +1,7 @@
 pub mod account_budgets;
 pub mod account_detail;
 pub mod account_rules;
+pub mod account_settings;
 pub mod account_transactions;
 pub mod accounts;
 pub mod backup;
@@ -8,6 +9,6 @@ pub mod budgets;
 pub mod categories;
 pub mod routes;
 pub mod rules;
-pub mod settings;
 pub mod transactions;
 pub mod uploader;
+pub mod utilities;

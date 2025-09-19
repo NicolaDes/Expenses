@@ -1,0 +1,39 @@
+{% extends "base_account.html" %}
+
+{% block title %}Settings {{ account.name }}{% endblock %}
+
+{% block content %}
+
+<div class="settings-page-container">
+
+    <form class="minimal-form" action="/accounts/{{ account.id }}/settings" method="post">
+        <div class="form-row">
+            <label for="date_index">Date Index:</label>
+            <input type="number" id="date_index" name="date_index" value="{{ settings.date_index }}" required>
+        </div>
+
+        <div class="form-row">
+            <label for="description_index">Description Index:</label>
+            <input type="number" id="description_index" name="description_index"
+                value="{{ settings.description_index }}" required>
+        </div>
+
+        <div class="form-row">
+            <label for="value_index">Value Index:</label>
+            <input type="number" id="value_index" name="value_index" value="{{ settings.value_index }}" required>
+        </div>
+
+        <div class="form-row">
+            <label for="starter_string">Starter String:</label>
+            <input type="text" id="starter_string" name="starter_string" value="{{ settings.starter_string }}" required>
+        </div>
+
+        <input type="hidden" name="account_id" value="{{ account.id }}">
+
+        <div class="form-row">
+            <button type="submit" class="btn-submit">Salva impostazioni</button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

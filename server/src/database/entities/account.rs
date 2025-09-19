@@ -16,6 +16,8 @@ pub enum Relation {
     AccountRule,
     #[sea_orm(has_many = "super::budget::Entity")]
     Budgets,
+    #[sea_orm(has_one = "super::settings::Entity")]
+    Settings,
 }
 
 impl ActiveModelBehavior for ActiveModel {}
@@ -39,5 +41,11 @@ impl Related<super::rule::Entity> for Entity {
 impl Related<super::budget::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Budgets.def()
+    }
+}
+
+impl Related<super::settings::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Settings.def()
     }
 }
