@@ -7,22 +7,9 @@
 <div class="budget-page-container">
     <section class="budgets-section">
         <h2>Budgets</h2>
-        <table class="budgets-table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Value</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for b in budgets %}
-                <tr>
-                    <td>{{ b.name }}</td>
-                    <td>{{ b.value }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <input type="text" id="table-global-filter" placeholder="🔍 Find..." />
+
+        <div id="budgets-table" class="tabulator custom-theme"></div>
     </section>
 
     <section class="form-section">
@@ -43,5 +30,33 @@
     </section>
 
 </div>
+
+
+<script type="module">
+    import { initTable, deleteFromTable } from "/static/js/tables.js";
+
+    const data = [
+        {% for b in budgets %}
+    { name: "{{ b.name }}", value: "{{ b.value }}" },
+    {% endfor %}
+  ];
+
+    const columns = [
+        { title: "Name", field: "name", sorter: "string" },
+        { title: "Value", field: "value", sorter: "number" }
+    ];
+
+    const table = initTable("#budgets-table", columns, data);
+
+    document.getElementById("table-global-filter").addEventListener("keyup", function () {
+        const val = this.value.toLowerCase();
+        table.setFilter([
+            [
+                { field: "name", type: "like", value: val },
+                { field: "value", type: "like", value: val },
+            ]
+        ]);
+    });
+</script>
 
 {% endblock %}
