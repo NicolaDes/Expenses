@@ -19,7 +19,6 @@ struct AccountsTemplate<'a> {
 #[derive(serde::Deserialize)]
 pub struct NewAccountForm {
     name: String,
-    balance: f64,
 }
 
 pub async fn get_all_accounts_handler(
@@ -45,7 +44,6 @@ pub async fn create_account(
 ) -> impl IntoResponse {
     let new_account = ActiveModel {
         name: Set(form.name),
-        balance: Set(form.balance),
         ..Default::default()
     };
 

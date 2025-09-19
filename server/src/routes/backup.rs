@@ -19,7 +19,6 @@ pub struct FullBackupDTO {
 pub struct AccountDTO {
     pub id: i32,
     pub name: String,
-    pub balance: f64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -80,7 +79,6 @@ pub async fn get_full_backup(db: &DatabaseConnection) -> Result<String, StatusCo
         .map(|a| AccountDTO {
             id: a.id,
             name: a.name,
-            balance: a.balance,
         })
         .collect();
 

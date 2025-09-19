@@ -6,7 +6,6 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub name: String,
-    pub balance: f64,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

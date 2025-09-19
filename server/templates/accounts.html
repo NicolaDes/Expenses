@@ -23,7 +23,6 @@
                 {% for account in accounts %}
                 <tr class="account-row" data-id="{{ account.id }}">
                     <td><a href="/accounts/{{ account.id }}">{{ account.name }}</a></td>
-                    <td>{{ account.balance }} €</td>
                     <td><button class="delete-btn">💀</button></td>
                 </tr>
                 {% endfor %}
@@ -38,11 +37,6 @@
             <div class="form-row">
                 <label for="account-name">Name</label>
                 <input id="account-name" type="text" name="name" required>
-            </div>
-
-            <div class="form-row">
-                <label for="account-balance">Balance</label>
-                <input id="account-balance" type="number" step="0.01" name="balance" required>
             </div>
 
             <div class="form-row">

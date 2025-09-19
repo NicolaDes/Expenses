@@ -114,7 +114,6 @@ pub async fn restore_full_backup(
         let _ = account::ActiveModel {
             id: Set(a.id),
             name: Set(a.name),
-            balance: Set(a.balance),
         }
         .insert(&db)
         .await;
