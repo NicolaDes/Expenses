@@ -82,19 +82,3 @@ pub async fn get_account_detail(
 
     Ok(Html(html.render().unwrap()))
 }
-
-// pub async fn upload_transactions(
-//     account_id: i32,
-//     Extension(db): Extension<DatabaseConnection>,
-//     mut multipart: Multipart,
-// ) -> impl IntoResponse {
-//     while let Some(field) = multipart.next_field().await.unwrap() {
-//         let name = field.name().unwrap_or("").to_string();
-//         if name == "file" {
-//             let data = field.bytes().await.unwrap();
-//         }
-//     }
-
-//     let url = format!("/accounts/{}", account_id);
-//     Redirect::to(&url).into_response()
-// }

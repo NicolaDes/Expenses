@@ -22,6 +22,16 @@
     box-shadow: var(--shadow-md);
     width: 900px;
     max-width: 90%;
+
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#preview-list {
+    overflow-y: auto;
+    flex: 1 1 auto;
+    margin-top: 10px;
 }
 
 .modal-close {

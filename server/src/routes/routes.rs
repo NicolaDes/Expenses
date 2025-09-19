@@ -16,8 +16,8 @@ use crate::routes::{
     accounts::{create_account, delete_account, get_all_accounts_handler},
     budgets::{delete_budget, get_budgets_handler},
     categories::{add_category_handler, delete_category, get_categories_handler},
-    index::get_index,
     rules::{delete_rule, get_rules_handler},
+    settings::{get_account_settings_handler, get_backup_account_handler, restore_full_backup},
     transactions::delete_transaction,
 };
 
@@ -37,7 +37,6 @@ pub fn account_routers() -> Router {
             get(get_account_transactions_handler),
         )
         .route("/{account_id}/budgets", get(get_account_budgets_handler))
-        .route("/{account_id}/settings", get(get_index))
         .route(
             "/{account_id}/rules/preview_apply_rules",
             get(preview_apply_rules),
@@ -83,6 +82,13 @@ pub fn transaction_routers() -> Router {
     Router::new().route("/{transaction_id}", delete(delete_transaction))
 }
 
+pub fn settings_routers() -> Router {
+    Router::new()
+        .route("/", get(get_account_settings_handler))
+        .route("/backup/export", get(get_backup_account_handler))
+        .route("/restore", post(restore_full_backup))
+}
+
 pub fn router() -> Router {
     Router::new()
         .nest_service("/static", ServeDir::new("static"))
@@ -92,4 +98,5 @@ pub fn router() -> Router {
         .nest("/rules", rule_routers())
         .nest("/budgets", budget_routers())
         .nest("/transactions", transaction_routers())
+        .nest("/settings", settings_routers())
 }

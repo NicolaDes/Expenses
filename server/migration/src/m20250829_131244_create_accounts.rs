@@ -19,7 +19,6 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Accounts::Name).string().not_null())
-                    .col(ColumnDef::new(Accounts::Balance).double().not_null())
                     .to_owned(),
             )
             .await
@@ -37,5 +36,4 @@ enum Accounts {
     Table,
     Id,
     Name,
-    Balance,
 }
