@@ -6,6 +6,7 @@ use axum::{
     Extension,
 };
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, DatabaseConnection, EntityTrait};
+use serde::Serialize;
 use serde_json::from_slice;
 
 use crate::{
@@ -17,6 +18,16 @@ use crate::{
 #[template(path = "settings.html")]
 struct AccountRulesTemplate<'a> {
     menu: &'a str,
+}
+
+#[derive(Serialize)]
+struct RestoreSummary {
+    accounts: usize,
+    categories: usize,
+    rules: usize,
+    budgets: usize,
+    transactions: usize,
+    account_rules: usize,
 }
 
 pub async fn get_account_settings_handler(
@@ -49,6 +60,14 @@ pub async fn restore_full_backup(
     mut multipart: Multipart,
 ) -> impl IntoResponse {
     let mut backup: Option<FullBackupDTO> = None;
+    let mut summary = RestoreSummary {
+        accounts: 0,
+        categories: 0,
+        rules: 0,
+        budgets: 0,
+        transactions: 0,
+        account_rules: 0,
+    };
 
     while let Some(field) = multipart.next_field().await.unwrap() {
         if field.name() == Some("backup_file") {
@@ -117,6 +136,19 @@ pub async fn restore_full_backup(
         }
         .insert(&db)
         .await;
+        summary.accounts += 1;
+    }
+
+    for c in backup.categories {
+        let _ = category::ActiveModel {
+            id: Set(c.id),
+            transaction_type: Set(c.transaction_type),
+            macro_category: Set(c.macro_category),
+            category: Set(c.category),
+        }
+        .insert(&db)
+        .await;
+        summary.categories += 1;
     }
 
     for t in backup.transactions {
@@ -132,6 +164,7 @@ pub async fn restore_full_backup(
         }
         .insert(&db)
         .await;
+        summary.transactions += 1;
     }
 
     for b in backup.budgets {
@@ -143,16 +176,7 @@ pub async fn restore_full_backup(
         }
         .insert(&db)
         .await;
-    }
-
-    for ar in backup.account_rules {
-        let _ = account_rule::ActiveModel {
-            id: Set(ar.id),
-            account_id: Set(ar.account_id),
-            rule_id: Set(ar.rule_id),
-        }
-        .insert(&db)
-        .await;
+        summary.budgets += 1;
     }
 
     for r in backup.rules {
@@ -168,18 +192,19 @@ pub async fn restore_full_backup(
         }
         .insert(&db)
         .await;
+        summary.rules += 1;
     }
 
-    for c in backup.categories {
-        let _ = category::ActiveModel {
-            id: Set(c.id),
-            transaction_type: Set(c.transaction_type),
-            macro_category: Set(c.macro_category),
-            category: Set(c.category),
+    for ar in backup.account_rules {
+        let _ = account_rule::ActiveModel {
+            id: Set(ar.id),
+            account_id: Set(ar.account_id),
+            rule_id: Set(ar.rule_id),
         }
         .insert(&db)
         .await;
+        summary.account_rules += 1;
     }
 
-    (StatusCode::OK, "Backup ripristinato con successo").into_response()
+    (StatusCode::OK, axum::Json(summary)).into_response()
 }
