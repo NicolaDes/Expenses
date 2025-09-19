@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+
+<section>
+    <h2>Gestione Backup</h2>
+
+    <a href="/settings/backup/export">
+        <button type="button">📥 Scarica backup</button>
+    </a>
+
+    <form id="restore-form" method="post" action="/settings/restore" enctype="multipart/form-data">
+        <input type="file" id="backup-file" name="backup_file" required>
+        <button type="submit">Carica</button>
+    </form>
+</section>
+
+<script type="module">
+    document.getElementById("restore-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        if (!confirm("Questa operazione eliminerà tutti i dati esistenti nel database. Procedere?")) {
+            return;
+        }
+
+        const form = e.target;
+        const formData = new FormData(form);
+
+        try {
+            const res = await fetch(form.action, {
+                method: "POST",
+                body: formData
+            });
+
+            if (!res.ok) throw new Error("Errore durante il restore");
+
+            alert("Restore completato con successo!");
+            window.location.reload();
+        } catch (err) {
+            alert(err);
+        }
+    });
+</script>
+
+{% endblock %}
