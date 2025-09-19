@@ -8,30 +8,11 @@
 <div class="account-page-container">
     <section class="transactions-section">
         <h2>Transactions</h2>
-        <table class="custom-table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Description</th>
-                    <th>Category</th>
-                    <th>Value</th>
-                    <th>Excluded percentage</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for t in transactions %}
-                <tr class="transaction-row" data-id="{{ t.txt.id }}">
-                    <td>{{ t.txt.date }}</td>
-                    <td>{{ t.txt.description }}</td>
-                    <td>{{ t.category_name }}</td>
-                    <td>{{ t.txt.value }} €</td>
-                    <td>{{ t.txt.perc_to_exclude }}%</td>
-                    <td><button class="delete-btn">💀</button></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+
+        <input type="text" id="table-global-filter" placeholder="🔍 Find..." />
+
+        <div id="transactions-table" class="tabulator custom-theme"></div>
+
     </section>
 
     <section class="form-section add-transaction-form">
@@ -83,19 +64,50 @@
 </div>
 
 <script type="module">
-    import { deleteFromTable } from "/static/script.js";
-    document.addEventListener("DOMContentLoaded", () => {
-        document.querySelectorAll(".delete-btn").forEach(btn => {
-            btn.addEventListener("click", async e => {
-                const row = e.target.closest(".transaction-row");
-                const id = row.dataset.id;
-                const accountId = document.body.dataset.accountId;
-                const path = `/transactions/${id}`;
+    import { initTable, deleteFromTable } from "/static/js/tables.js";
+
+    const data = [
+        {% for t in transactions %}
+    { id: "{{ t.txt.id }}", date: "{{ t.txt.date }}", description: "{{ t.txt.description }}", category_name: "{{ t.category_name }}", value: "{{ t.txt.value }} €", perc_to_exclude: "{{ t.txt.perc_to_exclude }} %" },
+    {% endfor %}
+  ];
+
+    const columns = [
+        { title: "Date", field: "date", sorter: "date", hozAlign: "center" },
+        { title: "Description", field: "description", sorter: "string" },
+        { title: "Category", field: "category_name", sorter: "string" },
+        { title: "Value", field: "value", sorter: "number" },
+        { title: "Excluded percentage", field: "perc_to_exclude", sorter: "number" },
+        {
+            title: "",
+            hozAlign: "center",
+            width: 60,
+            formatter: () => `<button class="delete-btn">💀</button>`,
+            cellClick: (e, cell) => {
+                const rowData = cell.getRow().getData();
+                const row = cell.getRow();
+
+                const path = `/transactions/${rowData.id}`;
                 const message = `Sei sicuro di voler eliminare questa transazione?`;
 
                 deleteFromTable(path, message, row);
-            });
-        });
+            }
+        }
+    ];
+
+    const table = initTable("#transactions-table", columns, data);
+
+    document.getElementById("table-global-filter").addEventListener("keyup", function () {
+        const val = this.value.toLowerCase();
+        table.setFilter([
+            [
+                { field: "date", type: "like", value: val },
+                { field: "description", type: "like", value: val },
+                { field: "category_name", type: "like", value: val },
+                { field: "value", type: "like", value: val },
+                { field: "perc_to_exclude", type: "like", value: val },
+            ]
+        ]);
     });
 </script>
 {% endblock %}
