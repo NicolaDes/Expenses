@@ -1,4 +1,3 @@
-use anyhow::Result;
 use axum::{
     extract::{Multipart, Path},
     http::StatusCode,
@@ -12,7 +11,7 @@ use sea_orm::{ActiveModelTrait, ActiveValue::Set, DatabaseConnection};
 use serde::Serialize;
 use std::io::Cursor;
 
-use crate::database::{account, transaction};
+use crate::database::transaction;
 
 #[derive(Serialize)]
 struct ImportSummary {
@@ -31,23 +30,22 @@ fn excel_number_to_date(excel_number: &str) -> Option<NaiveDate> {
     Some(base_date + Duration::days(n - 2))
 }
 
-pub async fn process_csv(data: &[u8]) -> anyhow::Result<Vec<TransactionData>> {
-    let mut transactions = Vec::new();
+async fn process_csv(data: &[u8]) -> anyhow::Result<Vec<TransactionData>> {
+    let transactions = Vec::new();
 
     let mut rdr = ReaderBuilder::new()
         .has_headers(false)
         .from_reader(Cursor::new(data));
 
-    for (idx, result) in rdr.records().enumerate() {
-        let record = result?;
-        eprintln!("CSV record: {:?}", record);
-        // todo!();
+    for (_idx, _result) in rdr.records().enumerate() {
+        // let record = result?;
+        todo!();
     }
 
     Ok(transactions)
 }
 
-pub async fn process_xlsx(data: &[u8]) -> anyhow::Result<Vec<TransactionData>> {
+async fn process_xlsx(data: &[u8]) -> anyhow::Result<Vec<TransactionData>> {
     // TODO: rearrange and take these information from database! -- BEGIN
     let date_idx = 0;
     let description_idx = 2;
@@ -91,18 +89,44 @@ pub async fn process_xlsx(data: &[u8]) -> anyhow::Result<Vec<TransactionData>> {
     Ok(transactions)
 }
 
-pub async fn process_xls(data: &[u8]) -> anyhow::Result<Vec<TransactionData>> {
+async fn process_xls(data: &[u8]) -> anyhow::Result<Vec<TransactionData>> {
+    // TODO: rearrange and take these information from database! -- BEGIN
+    let date_idx = 0;
+    let description_idx = 2;
+    let value_idx = 7;
+    let starter_string = "Data";
+    // TODO: rearrange and take these information from database! -- END
+
     let mut transactions = Vec::new();
     let cursor = Cursor::new(data);
     let mut workbook: Xls<_> = Xls::new(cursor)?;
 
     if let Some(Ok(range)) = workbook.worksheet_range_at(0) {
-        let mut in_transactions = false;
+        let mut found = false;
         for row in range.rows() {
             let values: Vec<String> = row.iter().map(|c| c.to_string()).collect();
 
-            eprintln!("XLS row: {:?}", values);
-            // todo!();
+            if !found {
+                if values.iter().any(|v| v.contains(starter_string)) {
+                    found = true;
+                    continue;
+                } else {
+                    continue;
+                }
+            }
+
+            let date = excel_number_to_date(&values[date_idx]).unwrap();
+            let description = values[description_idx].clone();
+            let value: f64 = values[value_idx]
+                .replace(',', ".")
+                .parse()
+                .expect("Not a Number");
+
+            transactions.push(TransactionData {
+                description: description,
+                value: value,
+                date: date,
+            });
         }
     }
 
