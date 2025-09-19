@@ -5,7 +5,9 @@ use axum::{
     response::{Html, IntoResponse, Response},
     Extension,
 };
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, DatabaseConnection, EntityTrait};
+use sea_orm::{
+    ActiveModelTrait, ActiveValue::Set, ConnectionTrait, DatabaseConnection, EntityTrait, Statement,
+};
 use serde::Serialize;
 use serde_json::from_slice;
 
@@ -28,6 +30,20 @@ struct RestoreSummary {
     budgets: usize,
     transactions: usize,
     account_rules: usize,
+}
+
+pub async fn reset_sequence(
+    db: &DatabaseConnection,
+    table: &str,
+    sequence: &str,
+) -> anyhow::Result<()> {
+    let sql = format!(
+        "SELECT setval('{}', (SELECT COALESCE(MAX(id), 0) FROM {}), true);",
+        sequence, table
+    );
+    db.execute(Statement::from_string(db.get_database_backend(), sql))
+        .await?;
+    Ok(())
 }
 
 pub async fn get_account_settings_handler(
@@ -204,6 +220,27 @@ pub async fn restore_full_backup(
         .insert(&db)
         .await;
         summary.account_rules += 1;
+    }
+
+    // Reset last_value in postgresql
+    let sequences = [
+        ("accounts", "accounts_id_seq"),
+        ("categories", "categories_id_seq"),
+        ("transactions", "transactions_id_seq"),
+        ("budgets", "budgets_id_seq"),
+        ("rules", "rules_id_seq"),
+        ("account_rules", "account_rules_id_seq"),
+    ];
+
+    for (table, seq) in sequences.iter() {
+        if let Err(e) = reset_sequence(&db, table, seq).await {
+            eprintln!("Errore riallineando sequenza {}: {:?}", seq, e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Errore riallineando i seriali",
+            )
+                .into_response();
+        }
     }
 
     (StatusCode::OK, axum::Json(summary)).into_response()
