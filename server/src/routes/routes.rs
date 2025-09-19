@@ -19,6 +19,7 @@ use crate::routes::{
     rules::{delete_rule, get_rules_handler},
     settings::{get_account_settings_handler, get_backup_account_handler, restore_full_backup},
     transactions::delete_transaction,
+    uploader::upload_transaction_file,
 };
 
 async fn root_redirect() -> Redirect {
@@ -57,6 +58,7 @@ pub fn account_routers() -> Router {
             "/{account_id}/rules/resolve_conflicts",
             post(resolve_conflicts_rules),
         )
+        .route("/{account_id}/upload", post(upload_transaction_file))
 }
 
 pub fn category_routers() -> Router {

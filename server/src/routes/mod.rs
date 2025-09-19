@@ -10,3 +10,4 @@ pub mod routes;
 pub mod rules;
 pub mod settings;
 pub mod transactions;
+pub mod uploader;
