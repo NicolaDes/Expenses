@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}Settings{% endblock %}
+{% block title %}Utilities{% endblock %}
 
 {% block content %}
 
 <section>
     <h2>Gestione Backup</h2>
 
-    <a href="/settings/backup/export">
+    <a href="/utilities/backup/export">
         <button type="button">📥 Scarica backup</button>
     </a>
 
-    <form id="restore-form" method="post" action="/settings/restore" enctype="multipart/form-data">
+    <form id="restore-form" method="post" action="/utilities/restore" enctype="multipart/form-data">
         <input type="file" name="backup_file" id="backup-file">
         <button type="submit">Ripristina</button>
     </form>
@@ -61,6 +61,7 @@
             <li>Budgets importati: ${data.budgets}</li>
             <li>Transazioni importate: ${data.transactions}</li>
             <li>Account rules importate: ${data.account_rules}</li>
+            <li>Settings importate: ${data.settings}</li>
         `;
 
             modal.style.display = "flex";

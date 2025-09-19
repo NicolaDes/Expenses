@@ -3,7 +3,7 @@ use chrono::{DateTime, NaiveDate, Utc};
 use sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
 
-use crate::database::{account, account_rule, budget, category, rule, transaction};
+use crate::database::{account, account_rule, budget, category, rule, settings, transaction};
 
 #[derive(Serialize, Deserialize)]
 pub struct FullBackupDTO {
@@ -13,6 +13,7 @@ pub struct FullBackupDTO {
     pub rules: Vec<RuleDTO>,
     pub categories: Vec<CategoryDTO>,
     pub account_rules: Vec<AccountRuleDTO>,
+    pub settings: Vec<AccountSettingsDTO>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -66,6 +67,16 @@ pub struct AccountRuleDTO {
     pub id: i32,
     pub account_id: i32,
     pub rule_id: i32,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct AccountSettingsDTO {
+    pub id: i32,
+    pub account_id: i32,
+    pub date_index: i32,
+    pub description_index: i32,
+    pub value_index: i32,
+    pub starter_string: String,
 }
 
 pub async fn get_full_backup(db: &DatabaseConnection) -> Result<String, StatusCode> {
@@ -164,6 +175,23 @@ pub async fn get_full_backup(db: &DatabaseConnection) -> Result<String, StatusCo
         })
         .collect();
 
+    let settings_model = settings::Entity::find().all(db).await.map_err(|e| {
+        eprintln!("Errore recuperando transazioni: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    let settings_dto: Vec<AccountSettingsDTO> = settings_model
+        .into_iter()
+        .map(|account_setting| AccountSettingsDTO {
+            id: account_setting.id,
+            account_id: account_setting.account_id,
+            date_index: account_setting.date_index,
+            description_index: account_setting.description_index,
+            value_index: account_setting.value_index,
+            starter_string: account_setting.starter_string,
+        })
+        .collect();
+
     let backup = FullBackupDTO {
         accounts: accounts_dto,
         budgets: budgets_dto,
@@ -171,6 +199,7 @@ pub async fn get_full_backup(db: &DatabaseConnection) -> Result<String, StatusCo
         rules: rules_dto,
         categories: categories_dto,
         account_rules: account_rules_dto,
+        settings: settings_dto,
     };
 
     let json_backup = serde_json::to_string_pretty(&backup).map_err(|e| {

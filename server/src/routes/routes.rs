@@ -12,14 +12,15 @@ use crate::routes::{
         activate_rule_handler, add_account_rule_handler, apply_rules, deactivate_rule_handler,
         get_account_rules_handler, preview_apply_rules, resolve_conflicts_rules,
     },
+    account_settings::{get_account_setting_handler, update_setting_handler},
     account_transactions::{add_transaction_handler, get_account_transactions_handler},
     accounts::{create_account, delete_account, get_all_accounts_handler},
     budgets::{delete_budget, get_budgets_handler},
     categories::{add_category_handler, delete_category, get_categories_handler},
     rules::{delete_rule, get_rules_handler},
-    settings::{get_account_settings_handler, get_backup_account_handler, restore_full_backup},
     transactions::delete_transaction,
     uploader::upload_transaction_file,
+    utilities::{get_backup_handler, get_utilities_handler, restore_full_backup},
 };
 
 async fn root_redirect() -> Redirect {
@@ -59,6 +60,8 @@ pub fn account_routers() -> Router {
             post(resolve_conflicts_rules),
         )
         .route("/{account_id}/upload", post(upload_transaction_file))
+        .route("/{account_id}/settings", get(get_account_setting_handler))
+        .route("/{account_id}/settings", post(update_setting_handler))
 }
 
 pub fn category_routers() -> Router {
@@ -84,10 +87,10 @@ pub fn transaction_routers() -> Router {
     Router::new().route("/{transaction_id}", delete(delete_transaction))
 }
 
-pub fn settings_routers() -> Router {
+pub fn utilities_routers() -> Router {
     Router::new()
-        .route("/", get(get_account_settings_handler))
-        .route("/backup/export", get(get_backup_account_handler))
+        .route("/", get(get_utilities_handler))
+        .route("/backup/export", get(get_backup_handler))
         .route("/restore", post(restore_full_backup))
 }
 
@@ -100,5 +103,5 @@ pub fn router() -> Router {
         .nest("/rules", rule_routers())
         .nest("/budgets", budget_routers())
         .nest("/transactions", transaction_routers())
-        .nest("/settings", settings_routers())
+        .nest("/utilities", utilities_routers())
 }

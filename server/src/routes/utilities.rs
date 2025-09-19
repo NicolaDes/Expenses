@@ -12,12 +12,12 @@ use serde::Serialize;
 use serde_json::from_slice;
 
 use crate::{
-    database::{account_rule, budget, category, entities::account, rule, transaction},
+    database::{account_rule, budget, category, entities::account, rule, settings, transaction},
     routes::backup::{get_full_backup, FullBackupDTO},
 };
 
 #[derive(Template)]
-#[template(path = "settings.html")]
+#[template(path = "utilities.html")]
 struct AccountRulesTemplate<'a> {
     menu: &'a str,
 }
@@ -30,6 +30,7 @@ struct RestoreSummary {
     budgets: usize,
     transactions: usize,
     account_rules: usize,
+    settings: usize,
 }
 
 pub async fn reset_sequence(
@@ -46,15 +47,15 @@ pub async fn reset_sequence(
     Ok(())
 }
 
-pub async fn get_account_settings_handler(
+pub async fn get_utilities_handler(
     Extension(_db): Extension<DatabaseConnection>,
 ) -> Result<Html<String>, StatusCode> {
-    let html = AccountRulesTemplate { menu: "accounts" };
+    let html = AccountRulesTemplate { menu: "utilities" };
 
     Ok(Html(html.render().unwrap()))
 }
 
-pub async fn get_backup_account_handler(Extension(db): Extension<DatabaseConnection>) -> Response {
+pub async fn get_backup_handler(Extension(db): Extension<DatabaseConnection>) -> Response {
     let json_backup = match get_full_backup(&db).await {
         Ok(json) => json,
         Err(status) => return status.into_response(),
@@ -83,6 +84,7 @@ pub async fn restore_full_backup(
         budgets: 0,
         transactions: 0,
         account_rules: 0,
+        settings: 0,
     };
 
     while let Some(field) = multipart.next_field().await.unwrap() {
@@ -141,6 +143,15 @@ pub async fn restore_full_backup(
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             "Errore eliminando account_rules",
+        )
+            .into_response();
+    }
+
+    if let Err(err) = settings::Entity::delete_many().exec(&db).await {
+        eprintln!("Errore cancellando settings: {:?}", err);
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Errore eliminando settings",
         )
             .into_response();
     }
@@ -222,6 +233,20 @@ pub async fn restore_full_backup(
         summary.account_rules += 1;
     }
 
+    for settings in backup.settings {
+        let _ = settings::ActiveModel {
+            id: Set(settings.id),
+            account_id: Set(settings.account_id),
+            date_index: Set(settings.date_index),
+            description_index: Set(settings.description_index),
+            value_index: Set(settings.value_index),
+            starter_string: Set(settings.starter_string),
+        }
+        .insert(&db)
+        .await;
+        summary.settings += 1;
+    }
+
     // Reset last_value in postgresql
     let sequences = [
         ("accounts", "accounts_id_seq"),
@@ -230,6 +255,7 @@ pub async fn restore_full_backup(
         ("budgets", "budgets_id_seq"),
         ("rules", "rules_id_seq"),
         ("account_rules", "account_rules_id_seq"),
+        ("settings", "settings_id_seq"),
     ];
 
     for (table, seq) in sequences.iter() {

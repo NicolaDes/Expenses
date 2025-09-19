@@ -6,6 +6,7 @@ mod m20250901_083712_create_categories;
 mod m20250901_142239_create_rules;
 mod m20250903_143112_create_account_rule;
 mod m20250903_152750_create_budget;
+mod m20250919_160321_create_settings;
 
 pub struct Migrator;
 
@@ -19,6 +20,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20250901_142239_create_rules::Migration),
             Box::new(m20250903_143112_create_account_rule::Migration),
             Box::new(m20250903_152750_create_budget::Migration),
+            Box::new(m20250919_160321_create_settings::Migration),
         ]
     }
 }

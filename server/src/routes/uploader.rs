@@ -7,11 +7,13 @@ use axum::{
 use calamine::{Reader, Xls, Xlsx};
 use chrono::{Duration, NaiveDate};
 use csv::ReaderBuilder;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, DatabaseConnection};
+use sea_orm::{
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
+};
 use serde::Serialize;
 use std::io::Cursor;
 
-use crate::database::transaction;
+use crate::database::{settings, transaction};
 
 #[derive(Serialize)]
 struct ImportSummary {
@@ -30,7 +32,13 @@ fn excel_number_to_date(excel_number: &str) -> Option<NaiveDate> {
     Some(base_date + Duration::days(n - 2))
 }
 
-async fn process_csv(data: &[u8]) -> anyhow::Result<Vec<TransactionData>> {
+async fn process_csv(
+    data: &[u8],
+    _date_idx: usize,
+    _description_idx: usize,
+    _value_idx: usize,
+    _starter_string: String,
+) -> anyhow::Result<Vec<TransactionData>> {
     let transactions = Vec::new();
 
     let mut rdr = ReaderBuilder::new()
@@ -45,14 +53,13 @@ async fn process_csv(data: &[u8]) -> anyhow::Result<Vec<TransactionData>> {
     Ok(transactions)
 }
 
-async fn process_xlsx(data: &[u8]) -> anyhow::Result<Vec<TransactionData>> {
-    // TODO: rearrange and take these information from database! -- BEGIN
-    let date_idx = 0;
-    let description_idx = 2;
-    let value_idx = 7;
-    let starter_string = "Data";
-    // TODO: rearrange and take these information from database! -- END
-
+async fn process_xlsx(
+    data: &[u8],
+    date_idx: usize,
+    description_idx: usize,
+    value_idx: usize,
+    starter_string: String,
+) -> anyhow::Result<Vec<TransactionData>> {
     let mut transactions = Vec::new();
     let cursor = Cursor::new(data);
     let mut workbook: Xlsx<_> = Xlsx::new(cursor)?;
@@ -63,7 +70,7 @@ async fn process_xlsx(data: &[u8]) -> anyhow::Result<Vec<TransactionData>> {
             let values: Vec<String> = row.iter().map(|c| c.to_string()).collect();
 
             if !found {
-                if values.iter().any(|v| v.contains(starter_string)) {
+                if values.iter().any(|v| v.contains(&starter_string)) {
                     found = true;
                     continue;
                 } else {
@@ -89,14 +96,13 @@ async fn process_xlsx(data: &[u8]) -> anyhow::Result<Vec<TransactionData>> {
     Ok(transactions)
 }
 
-async fn process_xls(data: &[u8]) -> anyhow::Result<Vec<TransactionData>> {
-    // TODO: rearrange and take these information from database! -- BEGIN
-    let date_idx = 0;
-    let description_idx = 2;
-    let value_idx = 7;
-    let starter_string = "Data";
-    // TODO: rearrange and take these information from database! -- END
-
+async fn process_xls(
+    data: &[u8],
+    date_idx: usize,
+    description_idx: usize,
+    value_idx: usize,
+    starter_string: String,
+) -> anyhow::Result<Vec<TransactionData>> {
     let mut transactions = Vec::new();
     let cursor = Cursor::new(data);
     let mut workbook: Xls<_> = Xls::new(cursor)?;
@@ -107,7 +113,7 @@ async fn process_xls(data: &[u8]) -> anyhow::Result<Vec<TransactionData>> {
             let values: Vec<String> = row.iter().map(|c| c.to_string()).collect();
 
             if !found {
-                if values.iter().any(|v| v.contains(starter_string)) {
+                if values.iter().any(|v| v.contains(&starter_string)) {
                     found = true;
                     continue;
                 } else {
@@ -141,6 +147,18 @@ pub async fn upload_transaction_file(
     let mut transactions = Vec::new();
     let mut processed_transactions = 0;
 
+    let settings = settings::Entity::find()
+        .filter(settings::Column::AccountId.eq(account_id))
+        .one(&db)
+        .await
+        .expect("Errore nel recupero di settings!")
+        .unwrap();
+
+    let date_index: usize = settings.date_index as usize;
+    let description_index: usize = settings.description_index as usize;
+    let value_index: usize = settings.value_index as usize;
+    let starter_string: &String = &settings.starter_string;
+
     while let Some(field) = multipart.next_field().await.unwrap() {
         let filename = field
             .file_name()
@@ -150,11 +168,32 @@ pub async fn upload_transaction_file(
         let data = field.bytes().await.unwrap();
 
         let parsed_transactions = if filename.ends_with(".csv") {
-            process_csv(&data).await
+            process_csv(
+                &data,
+                date_index,
+                description_index,
+                value_index,
+                starter_string.clone(),
+            )
+            .await
         } else if filename.ends_with(".xlsx") {
-            process_xlsx(&data).await
+            process_xlsx(
+                &data,
+                date_index,
+                description_index,
+                value_index,
+                starter_string.clone(),
+            )
+            .await
         } else if filename.ends_with(".xls") {
-            process_xls(&data).await
+            process_xls(
+                &data,
+                date_index,
+                description_index,
+                value_index,
+                starter_string.clone(),
+            )
+            .await
         } else {
             return (StatusCode::BAD_REQUEST, "Formato non supportato").into_response();
         };
