@@ -1,27 +1,122 @@
 .sub-navbar {
     display: flex;
     justify-content: center;
-    gap: var(--sub-navbar-gap, 20px);
-    background: var(--sub-navbar-bg, var(--color-navbar-bg));
-    border-bottom: 1px solid var(--sub-navbar-border, var(--color-navbar-border));
-    padding: var(--sub-navbar-padding, 10px 20px);
+    gap: var(--sub-navbar-gap, 12px);
+    background: var(--color-subnavbar-bg);
+    backdrop-filter: var(--blur-md);
+    -webkit-backdrop-filter: var(--blur-md);
+    border-bottom: 1px solid var(--color-navbar-border);
+    padding: var(--sub-navbar-padding, 12px 24px);
+    position: sticky;
+    top: var(--navbar-height, 64px);
+
+    z-index: 99;
+    transition: all var(--transition-smooth);
+
+    background-image: linear-gradient(to bottom,
+            var(--color-subnavbar-bg),
+            color-mix(in srgb, var(--color-subnavbar-bg) 95%, transparent 5%));
+}
+
+.sub-navbar-container {
+    display: flex;
+    justify-content: center;
+    gap: var(--sub-navbar-gap, 12px);
+    max-width: 800px;
+    margin: 0 auto;
+    flex-wrap: wrap;
 }
 
 .sub-navbar a {
-    padding: var(--sub-navbar-link-padding, 6px 12px);
+    padding: var(--sub-navbar-link-padding, 8px 16px);
     text-decoration: none;
-    color: var(--sub-navbar-link-color, var(--color-navbar-link));
-    border-radius: var(--sub-navbar-link-radius, var(--radius-sm));
-    transition: all 0.25s ease;
+    color: var(--color-subnavbar-link);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-fast);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    position: relative;
+
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: var(--blur-sm);
+    -webkit-backdrop-filter: var(--blur-sm);
+
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .sub-navbar a:hover {
-    background: var(--sub-navbar-hover-bg, var(--color-navbar-hover-bg));
-    color: var(--sub-navbar-hover-text, var(--color-navbar-hover-text));
+    background: var(--color-subnavbar-hover-bg);
+    color: var(--color-subnavbar-hover-text);
+    transform: translateY(-1px) scale(1.03);
+    box-shadow: var(--shadow-xs);
+    border-color: var(--color-subnavbar-hover-text);
 }
 
 .sub-navbar a.active {
-    background: var(--sub-navbar-active-bg, var(--color-navbar-active-bg));
-    color: var(--sub-navbar-active-text, var(--color-navbar-active-text));
+    background: var(--color-subnavbar-active-bg);
+    color: var(--color-subnavbar-active-text);
     font-weight: var(--sub-navbar-active-font-weight, 600);
+    box-shadow: var(--shadow-sm);
+    border-color: var(--color-subnavbar-active-bg);
+
+    transform: translateY(0px) scale(0.98);
+}
+
+.sub-navbar a.active:hover {
+    transform: translateY(-1px) scale(1.01);
+    box-shadow: var(--shadow-md);
+}
+
+.sub-navbar a.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 2px;
+    background: var(--color-subnavbar-active-bg);
+    border-radius: 1px;
+    opacity: 0.6;
+}
+
+.sub-navbar.compact {
+    padding: 8px 24px;
+}
+
+.sub-navbar.compact a {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+@media (max-width: 768px) {
+    .sub-navbar {
+        padding: 10px 16px;
+        overflow-x: auto;
+        justify-content: flex-start;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .sub-navbar-container {
+        justify-content: flex-start;
+        min-width: min-content;
+    }
+
+    .sub-navbar a {
+        padding: 8px 14px;
+        font-size: 13px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+
+    .sub-navbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .sub-navbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
 }

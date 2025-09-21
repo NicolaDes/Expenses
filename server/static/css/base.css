@@ -4,4 +4,39 @@ body {
     background: var(--color-bg);
     color: var(--color-text);
     line-height: var(--line-height, 1.6);
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    z-index: -1;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+a {
+    color: var(--color-navbar-active-bg);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+}
+
+a:hover {
+    color: var(--color-navbar-hover-text);
+}
+
+input,
+select,
+textarea {
+    font-family: inherit;
 }

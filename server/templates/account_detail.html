@@ -3,47 +3,49 @@
 {% block title %}Account: {{ account.name }}{% endblock %}
 
 {% block content %}
-<h1>{{ account.name }}</h1>
 
-<div class="account-page-container">
-    <section class="transactions-section">
-        <h2>Transactions</h2>
-
-        <input type="text" id="table-global-filter" placeholder="🔍 Find..." />
-
-        <div id="transactions-table" class="tabulator custom-theme"></div>
-    </section>
-
-    <section class="stats-section">
-        <h2>Statistiche</h2>
-        <div class="stats-grid">
-            <div class="stat-card">
-                <h3>Totale Entrate</h3>
-                <p>{{ total_income }}</p>
-            </div>
-            <div class="stat-card">
-                <h3>Totale Uscite</h3>
-                <p>{{ total_expense }}</p>
-            </div>
-        </div>
-    </section>
-
-    <section class="form-section upload-section">
-        <h2>Upload Transactions</h2>
-        <form id="upload-form" class="minimal-form" action="/accounts/{{ account.id }}/upload" method="post"
-            enctype="multipart/form-data">
-            <div class="form-row">
-                <label for="transaction-file">File CSV/Excel</label>
-                <div class="dropzone">
-                    Trascina qui il file o clicca per selezionarlo
-                    <input id="transaction-file" type="file" name="file" required>
+<div class="cards-dashboard">
+    <div class="card card-area-main card-large">
+        <div class="card-body">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Totale Entrate</h3>
+                    <p>{{ total_income }}</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Totale Uscite</h3>
+                    <p>{{ total_expense }}</p>
                 </div>
             </div>
-            <div class="form-row">
-                <button type="submit" class="btn-submit">Carica</button>
-            </div>
-        </form>
-    </section>
+        </div>
+    </div>
+
+    <div class="card card-span-4">
+        <div class="card-header">
+            <input type="text" id="table-global-filter" placeholder="🔍 Find transaction..." />
+        </div>
+        <div class="card-body">
+            <div id="transactions-table" class="tabulator custom-theme"></div>
+        </div>
+    </div>
+
+    <div class="card card-area-sidebar card-large">
+        <div class="card-body">
+            <form id="upload-form" class="minimal-form" action="/accounts/{{ account.id }}/upload" method="post"
+                enctype="multipart/form-data">
+                <div class="form-row">
+                    <label for="transaction-file">File CSV/Excel</label>
+                    <div class="dropzone">
+                        Drag and drop the transactions file or click to select it
+                        <input id="transaction-file" type="file" name="file" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <button type="submit" class="btn-submit">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
 </div>
 

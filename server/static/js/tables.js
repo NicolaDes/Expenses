@@ -10,7 +10,7 @@ export function initTable(selector, columns, data) {
         paginationSize: 10,
         movableColumns: true,
         resizableRows: true,
-        placeholder: "Nessun dato disponibile",
+        placeholder: "No data is available",
         autoResize: true,
         height: "auto",
     });
@@ -23,7 +23,7 @@ export async function deleteFromTable(path, confirmMessage, row) {
 
     try {
         const response = await fetch(path, { method: 'DELETE' });
-        if (!response.ok) throw new Error("Errore eliminando la transazione");
+        if (!response.ok) throw new Error("Error deleting from table");
 
         row.delete();
     } catch (err) {

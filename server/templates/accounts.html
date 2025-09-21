@@ -5,37 +5,52 @@
 {% block content %}
 
 
-<div class="page-container">
-    <h1>Accounts</h1>
+<div class="cards-dashboard">
 
-    <section class="accounts-section">
-        <h2>Accounts</h2>
+    <div class="card card-area-main card-large">
 
-        <input type="text" id="table-global-filter" placeholder="🔍 Find..." />
+        <div class="card-header">
+            <button id="open-hidden-modal" class="btn btn-primary">
+                <span class="btn-icon">+</span>
+            </button>
+            <input type="text" id="table-global-filter" placeholder="🔍 Find..." />
+        </div>
+        <div class="card-body">
+            <div id="accounts-table" class="tabulator custom-theme"></div>
+        </div>
+    </div>
 
-        <div id="accounts-table" class="tabulator custom-theme"></div>
-    </section>
+</div>
 
+<div id="hidden-modal" class="modal hidden">
+    <div class="card card-elevated modal-card">
+        <div class="card-header">
+            <h2>Add new account</h2>
+            <button id="close-hidden-modal" class="btn btn-ghost btn-icon-only">×</button>
+        </div>
 
-    <section class="form-section new-account-form">
-        <h2>Add a New Account</h2>
-        <form class="minimal-form" action="/accounts" method="post">
-            <div class="form-row">
-                <label for="account-name">Name</label>
-                <input id="account-name" type="text" name="name" required>
-            </div>
+        <div class="card-body">
+            <form class="minimal-form" action="/accounts" method="post">
+                <div class="form-row">
+                    <label for="account-name">Name</label>
+                    <input id="account-name" type="text" name="name" required>
+                </div>
 
-            <div class="form-row">
-                <button type="submit" class="btn-submit">Create</button>
-            </div>
-        </form>
-    </section>
-
+                <div class="form-row">
+                    <button type="submit" class="btn-submit">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 
 <script type="module">
-    import { deleteFromTable } from "/static/script.js";
+    import { deleteFromTable } from "/static/js/tables.js";
+    import { initHiddenModal } from "/static/js/modals.js";
+
+    initHiddenModal("open-hidden-modal", "hidden-modal", "close-hidden-modal");
+
     document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll(".delete-btn").forEach(btn => {
             btn.addEventListener("click", async e => {
