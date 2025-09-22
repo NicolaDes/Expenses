@@ -40,8 +40,9 @@ pub struct PeriodStats {
 
 #[derive(Serialize)]
 pub struct ChartData {
-    monthly_labels: Vec<String>,
-    monthly_values: Vec<f64>,
+    montly_labels: Vec<String>,
+    montly_expenses: Vec<f64>,
+    montly_income: Vec<f64>,
     income_categories: Vec<String>,
     income_values: Vec<f64>,
     expense_categories_category: Vec<String>,
@@ -125,8 +126,9 @@ pub async fn get_chart_data(
     let unused_category_ids = [2, 3, 4, 5, 21, 22, 23, 24];
     // TODO: Replace with settigns reading - END
 
-    let mut monthly_labels = vec![];
-    let mut monthly_values = vec![];
+    let mut montly_labels = vec![];
+    let mut montly_expenses = vec![];
+    let mut montly_income = vec![];
     let mut income_categories = vec![];
     let mut income_values = vec![];
     let mut expense_categories_category = vec![];
@@ -136,16 +138,18 @@ pub async fn get_chart_data(
     let mut income: f64 = 0.0;
     let mut expenses: f64 = 0.0;
     let mut transactions_count_used: i32 = 0;
-    let transactions_count = transaction::Entity::find()
-        .filter(transaction::Column::AccountId.eq(account_id))
-        .count(&db)
-        .await
-        .unwrap() as i32;
 
     let start_date = chrono::NaiveDate::parse_from_str(&range.start, "%Y-%m-%d")
         .map_err(|_| StatusCode::BAD_REQUEST)?;
     let end_date = chrono::NaiveDate::parse_from_str(&range.end, "%Y-%m-%d")
         .map_err(|_| StatusCode::BAD_REQUEST)?;
+
+    let transactions_count = transaction::Entity::find()
+        .filter(transaction::Column::AccountId.eq(account_id))
+        .filter(transaction::Column::Date.between(start_date, end_date))
+        .count(&db)
+        .await
+        .unwrap() as i32;
 
     let transactions = transaction::Entity::find()
         .filter(transaction::Column::AccountId.eq(account_id))
@@ -160,7 +164,7 @@ pub async fn get_chart_data(
     for transaction_with_cat in transactions.unwrap() {
         transactions_count_used += 1;
 
-        let monthly_label = transaction_with_cat.0.date.format("%b %Y").to_string();
+        let montly_label = transaction_with_cat.0.date.format("%b %Y").to_string();
         let weighted_transaction_value = transaction_with_cat.0.value
             - (transaction_with_cat.0.value * (transaction_with_cat.0.perc_to_exclude as f64));
 
@@ -170,17 +174,22 @@ pub async fn get_chart_data(
             expenses += weighted_transaction_value;
         }
 
-        if !monthly_labels.contains(&monthly_label) {
-            monthly_labels.push(monthly_label.clone());
-            monthly_values.push(0.0);
+        if !montly_labels.contains(&montly_label) {
+            montly_labels.push(montly_label.clone());
+            montly_expenses.push(0.0);
+            montly_income.push(0.0);
         }
 
-        let idx = monthly_labels
+        let idx = montly_labels
             .iter()
-            .position(|l| l == &monthly_label)
+            .position(|l| l == &montly_label)
             .unwrap();
 
-        monthly_values[idx] += weighted_transaction_value;
+        if weighted_transaction_value > 0.0 {
+            montly_income[idx] += weighted_transaction_value;
+        } else {
+            montly_expenses[idx] += weighted_transaction_value;
+        }
 
         if transaction_with_cat.0.value > 0.0 {
             let transaction_category = transaction_with_cat
@@ -243,11 +252,12 @@ pub async fn get_chart_data(
         }
     }
 
-    let months_size = monthly_labels.len() as f64;
+    let months_size = montly_labels.len() as f64;
 
     Ok(Json(ChartData {
-        monthly_labels,
-        monthly_values,
+        montly_labels,
+        montly_expenses,
+        montly_income,
         income_categories,
         income_values,
         expense_categories_category,
@@ -256,7 +266,7 @@ pub async fn get_chart_data(
         expense_values_macrocategory,
         income,
         expenses,
-        net_balance: income - expenses,
+        net_balance: income + expenses,
         transactions_count,
         transactions_count_used,
         mean_montly_income: income / months_size,

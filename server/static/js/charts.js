@@ -108,6 +108,17 @@ export function createPieChart(id, labels, data) {
             plugins: {
                 legend: {
                     labels: { color: colors.text }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const dataset = context.chart.data.datasets[0].data;
+                            const total = dataset.reduce((a, b) => a + b, 0);
+                            const value = context.parsed;
+                            const percent = ((value / total) * 100).toFixed(1) + '%';
+                            return `${context.label}: ${value} (${percent})`;
+                        }
+                    }
                 }
             }
         }

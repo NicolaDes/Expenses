@@ -17,11 +17,14 @@
 <body {% block body_attrs %}{% endblock %}>
     <nav class="navbar">
         <div class="navbar-left">
-            <select id="theme-selector">
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-                <option value="test">Test</option>
-            </select>
+            <div class="theme-switch-wrapper">
+                <span class="icon">☀️</span>
+                <label class="theme-switch">
+                    <input type="checkbox" id="theme-toggle">
+                    <span class="slider"></span>
+                </label>
+                <span class="icon">🌙</span>
+            </div>
         </div>
 
         <div class="navbar-center">
@@ -41,20 +44,19 @@
     </main>
 
     <script>
-        const selector = document.getElementById('theme-selector');
+        const toggle = document.getElementById('theme-toggle');
 
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme) {
-            document.documentElement.setAttribute('data-theme', savedTheme);
-            selector.value = savedTheme;
-        }
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        toggle.checked = savedTheme === 'dark';
 
-        selector.addEventListener('change', (e) => {
-            const theme = e.target.value;
+        toggle.addEventListener('change', (e) => {
+            const theme = e.target.checked ? 'dark' : 'light';
             document.documentElement.setAttribute('data-theme', theme);
             localStorage.setItem('theme', theme);
         });
     </script>
+
 
 </body>
 

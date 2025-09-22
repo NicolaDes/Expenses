@@ -12,18 +12,15 @@
 
                 <div class="form-row">
                     <div class="form-col">
-                        <label for="start-date">Data Inizio</label>
+                        <label for="start-date">Start Date</label>
                         <input type="date" id="start-date" name="start_date" value="{{ period_stats.start_date }}">
                     </div>
                     <div class="form-col">
-                        <label for="end-date">Data Fine</label>
+                        <label for="end-date">End Date</label>
                         <input type="date" id="end-date" name="end_date" value="{{ period_stats.end_date }}">
                     </div>
                     <div class="form-col">
-                        <button type="submit" class="btn-submit">Filtra</button>
-                    </div>
-                    <div class="form-col">
-                        <button type="button" id="reset-dates" class="btn-secondary">Reset</button>
+                        <button type="submit" class="btn-submit">Filter</button>
                     </div>
                 </div>
             </form>
@@ -31,57 +28,57 @@
         <div class="card-body">
             <div class="cards-flex-grid">
                 <div class="chart-card stat-card card-span-4 card-row-span-2">
-                    <h4>📈 Andamento Mensile</h4>
-                    <canvas id="monthlyTrendChart"></canvas>
+                    <h4>📈 Montly Trend</h4>
+                    <canvas id="montlyTrendChart"></canvas>
                 </div>
 
                 <div class="chart-card stat-card card-span-4 card-row-span-2">
-                    <h4>📊 Entrate vs Uscite Mensili</h4>
+                    <h4>📊 Montly Income vs Outcome</h4>
                     <canvas id="incomeVsExpenseChart"></canvas>
                 </div>
 
                 <div class="chart-card stat-card card-span-2 card-row-span-2">
-                    <h4>💰 Entrate per Categoria</h4>
+                    <h4>💰 Category Income</h4>
                     <canvas id="incomeByCategory"></canvas>
                 </div>
 
                 <div class="chart-card stat-card card-span-2 card-row-span-2">
-                    <h4>💸 Uscite per Categoria</h4>
+                    <h4>💸 Category Expenses</h4>
                     <canvas id="expenseByCategory"></canvas>
                 </div>
 
                 <div class="chart-card stat-card card-span-4 card-row-span-2">
-                    <h4>💸 Uscite per Macro Categoria</h4>
+                    <h4>💸 Macro Category Expenses</h4>
                     <canvas id="expenseByMacroCategory"></canvas>
                 </div>
 
                 <div class="stat-card card-span-2 card-row-span-1">
-                    <h3>💸 Entrate Periodo</h3>
+                    <h3>💸 Total Income</h3>
                     <p id="stat-income" class="stat-value negative">€ </p>
                 </div>
 
                 <div class="stat-card card-span-2 card-row-span-1">
-                    <h3>💸 Uscite Periodo</h3>
+                    <h3>💸 Total Expenses</h3>
                     <p id="stat-expense" class="stat-value negative">€ </p>
                 </div>
 
                 <div class="stat-card card-span-2 card-row-span-1">
-                    <h3>💰 Saldo Netto</h3>
+                    <h3>💰 Net balance</h3>
                     <p id="stat-balance" class="stat-value">€ </p>
                 </div>
 
                 <div class="stat-card card-span-2 card-row-span-1">
-                    <h3>📊 Transazioni</h3>
+                    <h3>📊 Used Transactions for analytics in current period</h3>
                     <p id="stat-transactions" class="stat-value"></p>
                 </div>
 
                 <div class="stat-card card-span-2 card-row-span-1">
-                    <h3>📈 Media Entrate/Mese</h3>
+                    <h3>📈 Mean montly income</h3>
                     <p id="stat-avg-income" class="stat-value">€ </p>
                 </div>
 
                 <div class="stat-card card-span-2 card-row-span-1">
-                    <h3>📉 Media Uscite/Mese</h3>
+                    <h3>📉 Mean montly expenses</h3>
                     <p id="stat-avg-expense" class="stat-value">€ </p>
                 </div>
             </div>
@@ -138,7 +135,7 @@
     async function update_charts() {
         const accountId = document.body.dataset.accountId;
 
-        const monthlyChartId = "monthlyTrendChart";
+        const montlyChartId = "montlyTrendChart";
         const incomePieId = "incomeByCategory";
         const expensePieId = "expenseByCategory";
         const multiLineId = "incomeVsExpenseChart";
@@ -151,18 +148,18 @@
 
         try {
             const res = await fetch(`/accounts/${accountId}/charts?start=${start}&end=${end}`);
-            if (!res.ok) throw new Error("Errore nel recupero dati grafici");
+            if (!res.ok) throw new Error("Unable to retrieve charts data");
 
             const data = await res.json();
 
-            createLineChart(monthlyChartId, data.monthly_labels, data.monthly_values, "expenses");
+            createLineChart(montlyChartId, data.montly_labels, data.montly_expenses, "expenses");
             createPieChart(incomePieId, data.income_categories, data.income_values);
             createPieChart(expensePieId, data.expense_categories_category, data.expense_values_category);
             createPieChart(expenseByMacroCategory, data.expense_categories_macrocategory, data.expense_values_macrocategory);
 
-            createMultiLineChart(multiLineId, data.monthly_labels, [
-                { label: "Income", data: data.monthly_values },
-                { label: "Outcome", data: data.monthly_values.map((v, i) => data.expense_values_category[i] || 0) }
+            createMultiLineChart(multiLineId, data.montly_labels, [
+                { label: "Income", data: data.montly_income },
+                { label: "Outcome", data: data.montly_expenses }
             ]);
 
             const parseNum = (val) => {
@@ -184,7 +181,7 @@
 
         } catch (err) {
             console.error(err);
-            alert("Impossibile aggiornare i grafici");
+            alert("Unable to update charts...");
         }
     }
 
