@@ -4,17 +4,85 @@
 
 {% block content %}
 
+
 <div class="cards-dashboard">
     <div class="card card-area-main card-large">
-        <div class="card-body">
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <h3>Totale Entrate</h3>
-                    <p>{{ total_income }}</p>
+        <div class="card-header">
+            <form id="date-filter-form" class="minimal-form">
+
+                <div class="form-row">
+                    <div class="form-col">
+                        <label for="start-date">Data Inizio</label>
+                        <input type="date" id="start-date" name="start_date" value="{{ period_stats.start_date }}">
+                    </div>
+                    <div class="form-col">
+                        <label for="end-date">Data Fine</label>
+                        <input type="date" id="end-date" name="end_date" value="{{ period_stats.end_date }}">
+                    </div>
+                    <div class="form-col">
+                        <button type="submit" class="btn-submit">Filtra</button>
+                    </div>
+                    <div class="form-col">
+                        <button type="button" id="reset-dates" class="btn-secondary">Reset</button>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <h3>Totale Uscite</h3>
-                    <p>{{ total_expense }}</p>
+            </form>
+        </div>
+        <div class="card-body">
+            <div class="cards-flex-grid">
+                <div class="chart-card stat-card card-span-4 card-row-span-2">
+                    <h4>📈 Andamento Mensile</h4>
+                    <canvas id="monthlyTrendChart"></canvas>
+                </div>
+
+                <div class="chart-card stat-card card-span-4 card-row-span-2">
+                    <h4>📊 Entrate vs Uscite Mensili</h4>
+                    <canvas id="incomeVsExpenseChart"></canvas>
+                </div>
+
+                <div class="chart-card stat-card card-span-2 card-row-span-2">
+                    <h4>💰 Entrate per Categoria</h4>
+                    <canvas id="incomeByCategory"></canvas>
+                </div>
+
+                <div class="chart-card stat-card card-span-2 card-row-span-2">
+                    <h4>💸 Uscite per Categoria</h4>
+                    <canvas id="expenseByCategory"></canvas>
+                </div>
+
+                <div class="chart-card stat-card card-span-4 card-row-span-2">
+                    <h4>💸 Uscite per Macro Categoria</h4>
+                    <canvas id="expenseByMacroCategory"></canvas>
+                </div>
+
+                <div class="stat-card card-span-2 card-row-span-1">
+                    <h3>💸 Entrate Periodo</h3>
+                    <p id="stat-income" class="stat-value negative">€ </p>
+                </div>
+
+                <div class="stat-card card-span-2 card-row-span-1">
+                    <h3>💸 Uscite Periodo</h3>
+                    <p id="stat-expense" class="stat-value negative">€ </p>
+                </div>
+
+                <div class="stat-card card-span-2 card-row-span-1">
+                    <h3>💰 Saldo Netto</h3>
+                    <p id="stat-balance" class="stat-value">€ </p>
+                </div>
+
+                <div class="stat-card card-span-2 card-row-span-1">
+                    <h3>📊 Transazioni</h3>
+                    <p id="stat-transactions" class="stat-value"></p>
+                </div>
+
+                <div class="stat-card card-span-2 card-row-span-1">
+                    <h3>📈 Media Entrate/Mese</h3>
+                    <p id="stat-avg-income" class="stat-value">€ </p>
+                </div>
+
+                <div class="stat-card card-span-2 card-row-span-1">
+                    <h3>📉 Media Uscite/Mese</h3>
+                    <p id="stat-avg-expense" class="stat-value">€ </p>
                 </div>
             </div>
         </div>
@@ -35,6 +103,8 @@
                 enctype="multipart/form-data">
                 <div class="form-row">
                     <label for="transaction-file">File CSV/Excel</label>
+                </div>
+                <div class="form-row">
                     <div class="dropzone">
                         Drag and drop the transactions file or click to select it
                         <input id="transaction-file" type="file" name="file" required>
@@ -61,6 +131,74 @@
         </ul>
     </div>
 </div>
+
+<script type="module">
+    import { createLineChart, createPieChart, createMultiLineChart } from "/static/js/charts.js";
+
+    async function update_charts() {
+        const accountId = document.body.dataset.accountId;
+
+        const monthlyChartId = "monthlyTrendChart";
+        const incomePieId = "incomeByCategory";
+        const expensePieId = "expenseByCategory";
+        const multiLineId = "incomeVsExpenseChart";
+        const expenseByMacroCategory = "expenseByMacroCategory";
+
+        const start = document.getElementById("start-date").value;
+        const end = document.getElementById("end-date").value;
+
+        if (!start || !end) return alert("Seleziona entrambe le date");
+
+        try {
+            const res = await fetch(`/accounts/${accountId}/charts?start=${start}&end=${end}`);
+            if (!res.ok) throw new Error("Errore nel recupero dati grafici");
+
+            const data = await res.json();
+
+            createLineChart(monthlyChartId, data.monthly_labels, data.monthly_values, "expenses");
+            createPieChart(incomePieId, data.income_categories, data.income_values);
+            createPieChart(expensePieId, data.expense_categories_category, data.expense_values_category);
+            createPieChart(expenseByMacroCategory, data.expense_categories_macrocategory, data.expense_values_macrocategory);
+
+            createMultiLineChart(multiLineId, data.monthly_labels, [
+                { label: "Income", data: data.monthly_values },
+                { label: "Outcome", data: data.monthly_values.map((v, i) => data.expense_values_category[i] || 0) }
+            ]);
+
+            const parseNum = (val) => {
+                const n = Number(val);
+                return isNaN(n) ? 0 : n;
+            };
+
+            const formatEur = (val) => `€ ${parseNum(val).toFixed(2)}`;
+
+
+
+            document.getElementById("stat-income").textContent = formatEur(data.income);
+            document.getElementById("stat-expense").textContent = formatEur(data.expenses);
+            document.getElementById("stat-balance").textContent = formatEur(data.net_balance);
+            document.getElementById("stat-transactions").textContent = `${data.transactions_count_used} / ${data.transactions_count}`;
+            document.getElementById("stat-avg-income").textContent = formatEur(data.mean_montly_income);
+            document.getElementById("stat-avg-expense").textContent = formatEur(data.mean_montly_expenses);
+
+
+        } catch (err) {
+            console.error(err);
+            alert("Impossibile aggiornare i grafici");
+        }
+    }
+
+    const form = document.getElementById("date-filter-form");
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        await update_charts();
+    });
+
+    update_charts();
+
+</script>
 
 <script type="module">
     import { initTable, deleteFromTable } from "/static/js/tables.js";

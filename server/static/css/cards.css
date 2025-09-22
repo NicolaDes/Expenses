@@ -74,7 +74,7 @@
 
 .card-elevated:hover {
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-    transform: translateY(-4px) scale(1.02);
+    transform: translateY(-4px);
 }
 
 .card-flat {
@@ -110,12 +110,12 @@
 }
 
 .card-interactive:hover {
-    transform: translateY(-3px) scale(1.02);
+    transform: translateY(-3px);
     box-shadow: var(--shadow-lg);
 }
 
 .card-interactive:active {
-    transform: translateY(-1px) scale(1.01);
+    transform: translateY(-1px);
     box-shadow: var(--shadow-md);
     transition: all 0.1s ease;
 }

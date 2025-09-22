@@ -2,43 +2,60 @@
 {% block title %}Categories{% endblock %}
 {% block content %}
 
-<div class="page-container">
-    <section class="categories-section">
-
-        <h1>Categories</h1>
-        <input type="text" id="table-global-filter" placeholder="🔍 Find..." />
-
-        <div id="categories-table" class="tabulator custom-theme"></div>
-    </section>
-
+<div class="cards-dashboard">
+    <div class="card card-area-main card-large">
+        <div class="card-header">
+            <button id="open-hidden-modal" class="btn btn-primary">
+                <span class="btn-icon">+</span>
+            </button>
+            <input type="text" id="table-global-filter" placeholder="🔍 Find..." />
+        </div>
+        <div class="card-body">
+            <div id="categories-table" class="tabulator custom-theme"></div>
+        </div>
+    </div>
 </div>
 
 
-<section class="form-section add-category-form">
-    <h2>Add New Category</h2>
-    <form class="minimal-form" method="post" action="/categories">
-
-        <div class="form-row">
-            <label for="category-type">Transaction Type</label>
-            <input id="category-type" type="text" name="transaction_type" required>
+<div id="hidden-modal" class="modal hidden">
+    <div class="card card-elevated modal-card">
+        <div class="card-header">
+            <h2>Add new category</h2>
+            <button id="close-hidden-modal" class="btn btn-ghost btn-icon-only">×</button>
         </div>
 
-        <div class="form-row">
-            <label for="category-macro">Macro Category</label>
-            <input id="category-macro" type="text" name="macro_category" required>
-        </div>
+        <div class="card-body">
+            <form class="minimal-form" method="post" action="/categories">
 
-        <div class="form-row">
-            <label for="category-name">Category</label>
-            <input id="category-name" type="text" name="category" required>
-        </div>
+                <div class="form-row">
+                    <label for="category-type">Transaction Type</label>
+                    <input id="category-type" type="text" name="transaction_type" required>
+                </div>
 
-        <div class="form-row">
-            <button type="submit" class="btn-submit">Add Category</button>
-        </div>
+                <div class="form-row">
+                    <label for="category-macro">Macro Category</label>
+                    <input id="category-macro" type="text" name="macro_category" required>
+                </div>
 
-    </form>
-</section>
+                <div class="form-row">
+                    <label for="category-name">Category</label>
+                    <input id="category-name" type="text" name="category" required>
+                </div>
+
+                <div class="form-row">
+                    <button type="submit" class="btn-submit">Add Category</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initHiddenModal } from "/static/js/modals.js";
+
+    initHiddenModal("open-hidden-modal", "hidden-modal", "close-hidden-modal");
+</script>
 
 <script type="module">
     import { initTable, deleteFromTable } from "/static/js/tables.js";

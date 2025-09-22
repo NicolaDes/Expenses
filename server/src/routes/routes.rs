@@ -7,7 +7,7 @@ use tower_http::services::ServeDir;
 
 use crate::routes::{
     account_budgets::{add_budget_handler, get_account_budgets_handler},
-    account_detail::get_account_detail,
+    account_detail::{get_account_detail, get_chart_data},
     account_rules::{
         activate_rule_handler, add_account_rule_handler, apply_rules, deactivate_rule_handler,
         get_account_rules_handler, preview_apply_rules, resolve_conflicts_rules,
@@ -62,6 +62,7 @@ pub fn account_routers() -> Router {
         .route("/{account_id}/upload", post(upload_transaction_file))
         .route("/{account_id}/settings", get(get_account_setting_handler))
         .route("/{account_id}/settings", post(update_setting_handler))
+        .route("/{account_id}/charts", get(get_chart_data))
 }
 
 pub fn category_routers() -> Router {

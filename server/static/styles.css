@@ -15,6 +15,7 @@
 @import url("css/search.css");
 @import url("css/rule.css");
 @import url("css/switch.css");
+@import url("css/charts.css");
 
 [data-theme="light"] body::before {
     background-image: url("images/big-sure-light.jpg");

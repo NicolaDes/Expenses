@@ -4,14 +4,16 @@
 
 {% block content %}
 
-<div class="page-container">
-    <section class="budgets-section">
-        <h2>Budgets</h2>
-        <input type="text" id="table-global-filter" placeholder="🔍 Find..." />
+<div class="cards-dashboard">
+    <div class="card card-area-main card-large">
+        <div class="card-header">
+            <input type="text" id="table-global-filter" placeholder="🔍 Find..." />
+        </div>
 
-        <div id="budgets-table" class="tabulator custom-theme"></div>
-    </section>
-
+        <div class="card-body">
+            <div id="budgets-table" class="tabulator custom-theme"></div>
+        </div>
+    </div>
 </div>
 
 <script type="module">

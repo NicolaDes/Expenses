@@ -4,34 +4,34 @@
 
 {% block content %}
 
-<section>
-    <h2>Gestione Backup</h2>
-
-    <a href="/utilities/backup/export">
-        <button type="button">📥 Scarica backup</button>
-    </a>
-
-    <form id="restore-form" method="post" action="/utilities/restore" enctype="multipart/form-data">
-        <input type="file" name="backup_file" id="backup-file">
-        <button type="submit">Ripristina</button>
-    </form>
-
-    <div id="restore-overlay" class="overlay hidden">
-        <div class="loader"></div>
+<div class="cards-flex-grid">
+    <div class="card card-span-4 card-row-span-2">
+        <a href="/utilities/backup/export">
+            <button type="button" class="btn-submit">📥 Scarica backup</button>
+        </a>
     </div>
 
-
-
-    <div id="restore-modal" class="modal hidden">
-        <div class="modal-content">
-            <span id="close-modal" class="modal-close">&times;</span>
-            <h3>Restore completed</h3>
-            <ul id="restore-summary">
-            </ul>
-        </div>
+    <div class="card card-span-4 card-row-span-2">
+        <form id="restore-form" class="minimal-form" method="post" action="/utilities/restore"
+            enctype="multipart/form-data">
+            <input type="file" name="backup_file" id="backup-file">
+            <button type="submit" class="btn-submit">Ripristina</button>
+        </form>
     </div>
+</div>
 
-</section>
+<div id="restore-overlay" class="overlay hidden">
+    <div class="loader"></div>
+</div>
+
+<div id="restore-modal" class="modal hidden">
+    <div class="modal-content">
+        <span id="close-modal" class="modal-close">&times;</span>
+        <h3>Restore completed</h3>
+        <ul id="restore-summary">
+        </ul>
+    </div>
+</div>
 
 <script type="module">
     const overlay = document.getElementById("restore-overlay");
