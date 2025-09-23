@@ -1,10 +1,31 @@
+export function isoDateTimeSorter(a, b) {
+    const dateA = new Date(a.replace(' ', 'T'));
+    const dateB = new Date(b.replace(' ', 'T'));
+    return dateA - dateB;
+}
+
 export function initTable(selector, columns, data) {
     const element = document.querySelector(selector);
     if (!element) return null;
 
+    const columnsWithSorter = columns.map(col => {
+        if (col.field === "date") {
+            return {
+                ...col,
+                sorter: (a, b) => {
+                    const dateA = new Date(a.replace(' ', 'T'));
+                    const dateB = new Date(b.replace(' ', 'T'));
+                    return dateA - dateB;
+                }
+            };
+        }
+        return col;
+    });
+
+
     const table = new Tabulator(selector, {
         data: data,
-        columns: columns,
+        columns: columnsWithSorter,
         layout: "fitColumns",
         pagination: "local",
         paginationSize: 10,

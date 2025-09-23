@@ -71,14 +71,14 @@ export function createLineChart(id, labels, data, label) {
 
     const observer = new MutationObserver(() => {
         colors = getLineColors();
-        chart.data.datasets[0].backgroundColor = colors.fill;
-        chart.data.datasets[0].borderColor = colors.line;
-        chart.options.plugins.legend.labels.color = colors.text;
-        chart.options.scales.x.ticks.color = colors.text;
-        chart.options.scales.x.grid.color = colors.grid;
-        chart.options.scales.y.ticks.color = colors.text;
-        chart.options.scales.y.grid.color = colors.grid;
-        chart.update();
+        chartInstances[id].data.datasets[0].backgroundColor = colors.fill;
+        chartInstances[id].data.datasets[0].borderColor = colors.line;
+        chartInstances[id].options.plugins.legend.labels.color = colors.text;
+        chartInstances[id].options.scales.x.ticks.color = colors.text;
+        chartInstances[id].options.scales.x.grid.color = colors.grid;
+        chartInstances[id].options.scales.y.ticks.color = colors.text;
+        chartInstances[id].options.scales.y.grid.color = colors.grid;
+        chartInstances[id].update();
     });
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
@@ -127,10 +127,10 @@ export function createPieChart(id, labels, data) {
 
     const observer = new MutationObserver(() => {
         colors = getPieColors();
-        chart.data.datasets[0].backgroundColor = colors.segments;
-        chart.data.datasets[0].borderColor = colors.border;
-        chart.options.plugins.legend.labels.color = colors.text;
-        chart.update();
+        chartInstances[id].data.datasets[0].backgroundColor = colors.segments;
+        chartInstances[id].data.datasets[0].borderColor = colors.border;
+        chartInstances[id].options.plugins.legend.labels.color = colors.text;
+        chartInstances[id].update();
     });
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
@@ -188,19 +188,19 @@ export function createMultiLineChart(id, labels, datasets) {
         const textColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text').trim();
         const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--color-rule-border').trim();
 
-        chart.options.plugins.legend.labels.color = textColor;
-        chart.options.scales.x.ticks.color = textColor;
-        chart.options.scales.x.grid.color = gridColor;
-        chart.options.scales.y.ticks.color = textColor;
-        chart.options.scales.y.grid.color = gridColor;
+        chartInstances[id].options.plugins.legend.labels.color = textColor;
+        chartInstances[id].options.scales.x.ticks.color = textColor;
+        chartInstances[id].options.scales.x.grid.color = gridColor;
+        chartInstances[id].options.scales.y.ticks.color = textColor;
+        chartInstances[id].options.scales.y.grid.color = gridColor;
 
-        chart.data.datasets.forEach((ds, i) => {
+        chartInstances[id].data.datasets.forEach((ds, i) => {
             const colors = getColorsForDataset(datasets[i]);
             ds.backgroundColor = colors.fill;
             ds.borderColor = colors.line;
         });
 
-        chart.update();
+        chartInstances[id].update();
     });
 
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });

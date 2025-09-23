@@ -1,32 +1,28 @@
-use crate::database::{
-    account::{self, Model as AccountModel},
-    category,
-    transaction::{self},
+use crate::{
+    database::{
+        account::{self, Model as AccountModel},
+        category,
+        transaction::{self},
+    },
+    routes::{common::DateRange, report::get_splittable_expenses_report},
 };
 use askama::Template;
 use axum::{
     extract::{Extension, Path, Query},
-    http::StatusCode,
-    response::Html,
+    http::{header, Response, StatusCode},
+    response::{Html, IntoResponse},
     Json,
 };
 use chrono::{Datelike, NaiveDate, Utc};
 use sea_orm::{
     ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
 };
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug)]
-struct TransactionWithCategory {
-    txt: transaction::Model,
-    category_name: String,
-}
+use serde::Serialize;
 
 #[derive(Template)]
 #[template(path = "account_detail.html")]
 struct AccountDetailTemplate<'a> {
     account: &'a AccountModel,
-    transactions: Vec<TransactionWithCategory>,
     period_stats: PeriodStats,
     menu: &'a str,
     sub_menu: &'a str,
@@ -58,12 +54,6 @@ pub struct ChartData {
     mean_montly_expenses: f64,
 }
 
-#[derive(Deserialize)]
-pub struct DateRange {
-    start: String,
-    end: String,
-}
-
 pub async fn get_account_detail(
     Path(account_id): Path<i32>,
     Extension(db): Extension<DatabaseConnection>,
@@ -74,35 +64,11 @@ pub async fn get_account_detail(
         .expect("Errore DB")
         .expect("Account non trovato");
 
-    let txs_with_cats = transaction::Entity::find()
-        .filter(transaction::Column::AccountId.eq(account_id))
-        .find_with_related(category::Entity)
-        .all(&db)
-        .await
-        .map_err(|e| {
-            eprintln!("Errore find_with_related: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    let transactions: Vec<TransactionWithCategory> = txs_with_cats
-        .into_iter()
-        .map(|(txt, cats)| {
-            let category_name = cats
-                .into_iter()
-                .next()
-                .map(|c| c.category)
-                .unwrap_or_else(|| "-".to_string());
-
-            TransactionWithCategory { txt, category_name }
-        })
-        .collect();
-
     let today = Utc::now().date_naive();
     let start_of_year = NaiveDate::from_ymd_opt(today.year(), 1, 1).unwrap();
 
     let html = AccountDetailTemplate {
         account: &account_model,
-        transactions: transactions,
         period_stats: PeriodStats {
             start_date: start_of_year,
             end_date: today,
@@ -112,6 +78,37 @@ pub async fn get_account_detail(
     };
 
     Ok(Html(html.render().unwrap()))
+}
+
+pub async fn get_expenses_report(
+    Path(account_id): Path<i32>,
+    Query(range): Query<DateRange>,
+    Extension(db): Extension<DatabaseConnection>,
+) -> impl IntoResponse {
+    // TODO: Replace with settigns reading - BEGIN
+    let excluded_category_ids: Vec<i32> = vec![1, 2, 3, 4, 5, 21, 22, 23, 24];
+    // TODO: Replace with settigns reading - END
+
+    let data =
+        match get_splittable_expenses_report(account_id, &Query(range), excluded_category_ids, &db)
+            .await
+        {
+            Ok(csv) => csv,
+            Err(_) => {
+                return (StatusCode::INTERNAL_SERVER_ERROR, "Failed to generate CSV")
+                    .into_response()
+            }
+        };
+
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "text/csv")
+        .header(
+            header::CONTENT_DISPOSITION,
+            "attachment; filename=\"report.csv\"",
+        )
+        .body(data.into())
+        .unwrap()
 }
 
 pub async fn get_chart_data(

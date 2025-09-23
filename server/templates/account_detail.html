@@ -85,32 +85,50 @@
         </div>
     </div>
 
-    <div class="card card-span-4">
-        <div class="card-header">
-            <input type="text" id="table-global-filter" placeholder="🔍 Find transaction..." />
-        </div>
-        <div class="card-body">
-            <div id="transactions-table" class="tabulator custom-theme"></div>
-        </div>
-    </div>
-
     <div class="card card-area-sidebar card-large">
-        <div class="card-body">
-            <form id="upload-form" class="minimal-form" action="/accounts/{{ account.id }}/upload" method="post"
-                enctype="multipart/form-data">
-                <div class="form-row">
+        <div class="cards-stack">
+            <div class="card stat-card">
+                <div class="card-header">
                     <label for="transaction-file">File CSV/Excel</label>
                 </div>
-                <div class="form-row">
-                    <div class="dropzone">
-                        Drag and drop the transactions file or click to select it
-                        <input id="transaction-file" type="file" name="file" required>
+                <div class="card-body">
+                    <form id="upload-form" class="minimal-form" action="/accounts/{{ account.id }}/upload" method="post"
+                        enctype="multipart/form-data">
+                        <div class="form-row">
+                            <div class="dropzone">
+                                Drag and drop the transactions file or click to select it
+                                <input id="transaction-file" type="file" name="file" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <button type="submit" class="btn-submit">Upload</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="card stat-card">
+                <div class="card-header">
+                    <h2>Report data range</h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <form class="minimal-form" id="download-report-form" action="/accounts/{{ account.id }}/report"
+                            method="get">
+                            <div class="form-row">
+                                <label for="start-date-report"></label>
+                                <input type="date" id="start-date-report" name="start">
+                            </div>
+                            <div class="form-row">
+                                <label for="end-date-report"></label>
+                                <input type="date" id="end-date-report" name="end">
+                            </div>
+                            <div class="form-row">
+                                <button type="submit" class="btn-submit">📥 Download report</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
-                <div class="form-row">
-                    <button type="submit" class="btn-submit">Upload</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 
@@ -128,6 +146,19 @@
         </ul>
     </div>
 </div>
+
+<script type="module">
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const end = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    const pad = n => n.toString().padStart(2, '0');
+    const format = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+    document.getElementById('start-date-report').value = format(start);
+    document.getElementById('end-date-report').value = format(end);
+
+</script>
 
 <script type="module">
     import { createLineChart, createPieChart, createMultiLineChart } from "/static/js/charts.js";
@@ -198,52 +229,6 @@
 </script>
 
 <script type="module">
-    import { initTable, deleteFromTable } from "/static/js/tables.js";
-
-    const data = [
-        {% for t in transactions %}
-    { id: "{{ t.txt.id }}", date: "{{ t.txt.date }}", description: "{{ t.txt.description }}", category_name: "{{ t.category_name }}", value: "{{ t.txt.value }} €", perc_to_exclude: "{{ t.txt.perc_to_exclude }} %" },
-    {% endfor %}
-  ];
-
-    const columns = [
-        { title: "Date", field: "date", sorter: "date", hozAlign: "center" },
-        { title: "Description", field: "description", sorter: "string" },
-        { title: "Category", field: "category_name", sorter: "string" },
-        { title: "Value", field: "value", sorter: "number" },
-        { title: "Excluded percentage", field: "perc_to_exclude", sorter: "number" },
-        {
-            title: "",
-            hozAlign: "center",
-            width: 60,
-            formatter: () => `<button class="delete-btn">💀</button>`,
-            cellClick: (e, cell) => {
-                const rowData = cell.getRow().getData();
-                const row = cell.getRow();
-
-                const path = `/transactions/${rowData.id}`;
-                const message = `Sei sicuro di voler eliminare questa transazione?`;
-
-                deleteFromTable(path, message, row);
-            }
-        }
-    ];
-
-    const table = initTable("#transactions-table", columns, data);
-
-    document.getElementById("table-global-filter").addEventListener("keyup", function () {
-        const val = this.value.toLowerCase();
-        table.setFilter([
-            [
-                { field: "date", type: "like", value: val },
-                { field: "description", type: "like", value: val },
-                { field: "category_name", type: "like", value: val },
-                { field: "value", type: "like", value: val },
-                { field: "perc_to_exclude", type: "like", value: val },
-            ]
-        ]);
-    });
-
     const overlay = document.getElementById("upload-overlay");
     const modal = document.getElementById("upload-modal");
     const summaryUl = document.getElementById("upload-summary");

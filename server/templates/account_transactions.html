@@ -79,13 +79,14 @@
 
     const data = [
         {% for t in transactions %}
-    { id: "{{ t.txt.id }}", date: "{{ t.txt.date }}", description: "{{ t.txt.description }}", category_name: "{{ t.category_name }}", value: "{{ t.txt.value }} €", perc_to_exclude: "{{ t.txt.perc_to_exclude }} %" },
+    { id: "{{ t.txt.id }}", date: "{{ t.txt.date }}", description: "{{ t.txt.description }}", label: "{{ t.txt.label }}", category_name: "{{ t.category_name }}", value: "{{ t.txt.value }} €", perc_to_exclude: "{{ t.txt.perc_to_exclude }} %" },
     {% endfor %}
   ];
 
     const columns = [
         { title: "Date", field: "date", sorter: "date", hozAlign: "center" },
         { title: "Description", field: "description", sorter: "string" },
+        { title: "Label", field: "label", sorter: "string" },
         { title: "Category", field: "category_name", sorter: "string" },
         { title: "Value", field: "value", sorter: "number" },
         { title: "Excluded percentage", field: "perc_to_exclude", sorter: "number" },
@@ -114,6 +115,7 @@
             [
                 { field: "date", type: "like", value: val },
                 { field: "description", type: "like", value: val },
+                { field: "label", type: "like", value: val },
                 { field: "category_name", type: "like", value: val },
                 { field: "value", type: "like", value: val },
                 { field: "perc_to_exclude", type: "like", value: val },
