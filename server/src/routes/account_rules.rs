@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::database::{
     category,
     entities::{account, account_rule, rule},
@@ -22,12 +24,16 @@ use serde::{Deserialize, Serialize};
 #[template(path = "account_rules.html")]
 struct AccountRulesTemplate<'a> {
     account: account::Model,
-    active_rules: Vec<rule::Model>,
-    inactive_rules: Vec<rule::Model>,
+    rules: Vec<RuleWithStatus>,
     categories: Vec<category::Model>,
     uncategorized_transactions: Vec<transaction::Model>,
     menu: &'a str,
     sub_menu: &'a str,
+}
+
+struct RuleWithStatus {
+    model: rule::Model,
+    active: bool,
 }
 
 #[derive(Serialize)]
@@ -75,28 +81,32 @@ pub async fn get_account_rules_handler(
         })?
         .ok_or(StatusCode::NOT_FOUND)?;
 
-    let active_rules_raw = account::Entity::find_by_id(account_id)
-        .find_with_related(rule::Entity)
+    let all_rules: Vec<rule::Model> = rule::Entity::find().all(&db).await.map_err(|e| {
+        eprintln!("Errore nel recupero di tutte le regole: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    let active_rule_ids: HashSet<i32> = account_rule::Entity::find()
+        .filter(account_rule::Column::AccountId.eq(account_id))
         .all(&db)
         .await
         .map_err(|e| {
             eprintln!("Errore nel recupero delle regole attive: {:?}", e);
             StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    let active_rules: Vec<rule::Model> = active_rules_raw
+        })?
         .into_iter()
-        .flat_map(|(_acc, rules)| rules)
+        .map(|ar| ar.rule_id)
         .collect();
 
-    let all_rules = rule::Entity::find().all(&db).await.map_err(|e| {
-        eprintln!("Errore nel recupero di tutte le regole: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
-    let inactive_rules: Vec<rule::Model> = all_rules
+    let rules_with_status: Vec<RuleWithStatus> = all_rules
         .into_iter()
-        .filter(|r| !active_rules.iter().any(|ar| ar.id == r.id))
+        .map(|r| {
+            let id = r.id;
+            RuleWithStatus {
+                model: r,
+                active: active_rule_ids.contains(&id),
+            }
+        })
         .collect();
 
     let categories = category::Entity::find()
@@ -116,8 +126,7 @@ pub async fn get_account_rules_handler(
 
     let html = AccountRulesTemplate {
         account: account_data,
-        active_rules,
-        inactive_rules,
+        rules: rules_with_status,
         categories,
         uncategorized_transactions,
         menu: "accounts",

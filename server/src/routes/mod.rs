@@ -7,6 +7,8 @@ pub mod accounts;
 pub mod backup;
 pub mod budgets;
 pub mod categories;
+pub mod common;
+pub mod report;
 pub mod routes;
 pub mod rules;
 pub mod transactions;

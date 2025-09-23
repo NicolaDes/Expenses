@@ -4,36 +4,51 @@
 
 {% block content %}
 
-<div class="budget-page-container">
-    <section class="budgets-section">
-        <h2>Budgets</h2>
-        <input type="text" id="table-global-filter" placeholder="🔍 Find..." />
+<div class="cards-stack">
+    <div class="card">
+        <div class="card-header">
+            <h2>Budgets</h2>
+            <button id="open-hidden-modal" class="btn btn-primary">
+                <span class="btn-icon">+</span>
+            </button>
+        </div>
+        <div class="card-body">
+            <input type="text" id="table-global-filter" placeholder="🔍 Find..." />
+            <div id="budgets-table" class="tabulator custom-theme"></div>
+        </div>
+    </div>
+</div>
 
-        <div id="budgets-table" class="tabulator custom-theme"></div>
-    </section>
-
-    <section class="form-section">
-        <h2>Add New Budget</h2>
-        <form class="minimal-form" method="post" action="/accounts/{{ account.id }}/budgets">
-            <div class="form-row">
-                <label for="budget-name">Name</label>
-                <input id="budget-name" type="text" name="name" required>
-            </div>
-            <div class="form-row">
-                <label for="budget-value">Value</label>
-                <input id="budget-value" type="number" step="0.01" name="value" required>
-            </div>
-            <div class="form-row">
-                <button type="submit" class="btn-submit">Add Budget</button>
-            </div>
-        </form>
-    </section>
-
+<div id="hidden-modal" class="modal hidden">
+    <div class="card card-elevated modal-card">
+        <div class="card-header">
+            <h2>Add New Budget</h2>
+            <button id="close-hidden-modal" class="btn btn-ghost btn-icon-only">×</button>
+        </div>
+        <div class="card-body">
+            <form class="minimal-form" method="post" action="/accounts/{{ account.id }}/budgets">
+                <div class="form-row">
+                    <label for="budget-name">Name</label>
+                    <input id="budget-name" type="text" name="name" required>
+                </div>
+                <div class="form-row">
+                    <label for="budget-value">Value</label>
+                    <input id="budget-value" type="number" step="0.01" name="value" required>
+                </div>
+                <div class="form-row">
+                    <button type="submit" class="btn-submit">Add Budget</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 
 <script type="module">
     import { initTable, deleteFromTable } from "/static/js/tables.js";
+    import { initHiddenModal } from "/static/js/modals.js";
+
+    initHiddenModal("open-hidden-modal", "hidden-modal", "close-hidden-modal");
 
     const data = [
         {% for b in budgets %}

@@ -1,95 +1,140 @@
 {% extends "base_account.html" %}
 
-{⅜ block title %}Rules in {{ account.name }} {⅜ endblock %}
+{% block title %}Rules in {{ account.name }}{% endblock %}
 
 {% block content %}
 
+<div class="cards-flex-grid">
+    <div class="card card-span-8 card-row-span-2">
+        <div class="card-header">
+            <h2 class="card-title">Uncategorized transactions</h2>
+        </div>
+
+        <div class="card-body">
+            <div class="search-container">
+                <input type="text" id="table-global-filter" class="search-input" placeholder="🔍 Find transactios..." />
+            </div>
+
+            <div id="transactions-table" class="tabulator custom-theme"></div>
+        </div>
+    </div>
+
+    <div class="card card-span-4">
+        <div class="card-header">
+            <h2 class="card-title">Rules</h2>
+            <p class="card-subtitle">Activate or deactivate a rule</p>
+        </div>
+
+        <div class="card-body">
+
+            <div class="rules-controls">
+                <div class="rules-controls-left">
+                    <button id="open-hidden-modal" class="btn btn-primary">
+                        <span class="btn-icon">+</span>
+                    </button>
+                </div>
+                <div class="rules-controls-right">
+                    <button id="apply-rules-btn" class="btn btn-secondary">
+                        <span class="btn-icon">⚡</span>
+                        Apply active rules
+                    </button>
+                </div>
+            </div>
+
+
+            <div class="rules-list">
+                {% for rule in rules %}
+                <div class="rule-item {% if rule.active %}active{% else %}inactive{% endif %}"
+                    data-rule-id="{{ rule.model.id }}">
+                    <div class="rule-info">
+                        <div class="rule-name">{{ rule.model.name }}</div>
+                        <div class="rule-details">
+                            <span class="rule-label">{{ rule.model.label }}</span>
+                            <span class="rule-percentage">{{ rule.model.percentage }}%</span>
+                        </div>
+                    </div>
+                    <div class="rule-actions">
+                        <label class="switch">
+                            <input type="checkbox" {% if rule.active %}checked{% endif %}
+                                data-rule-id="{{ rule.model.id }}">
+                            <span class="switch-slider"></span>
+                        </label>
+                        <button class="btn btn-ghost btn-sm rule-edit-btn" data-rule-id="{{ rule.model.id }}">
+                            Edit
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="apply-rules-modal" class="modal hidden">
-    <div class="modal-content">
-        <span id="close-apply-rules-modal" class="modal-close">&times;</span>
-        <h2>Preview Apply Rules</h2>
-        <div id="preview-list">
-
+    <div class="card card-elevated modal-card">
+        <div class="card-header">
+            <h3 class="card-title">Preview application</h3>
+            <button id="close-apply-rules-modal" class="btn btn-ghost btn-icon-only">×</button>
         </div>
-        <div style="margin-top: 20px; text-align: right;">
-            <button id="confirm-apply-rules" class="btn-submit">Confirm</button>
+        <div class="card-body">
+            <div id="preview-list" class="preview-container"></div>
+        </div>
+        <div class="card-footer">
+            <div class="card-actions">
+                <button id="cancel-apply-rules" class="btn btn-ghost">Cancel</button>
+                <button id="confirm-apply-rules" class="btn btn-primary">Confirm</button>
+            </div>
         </div>
     </div>
 </div>
 
-
-<div style="display: flex; justify-content: space-between; align-items: center;">
-    <h2>Active Rules</h2>
-    <button id="apply-rules-btn" class="btn-submit">Apply Rules</button>
-</div>
-<div id="active-rules" class="dropzone">
-    {% for rule in active_rules %}
-    <div class="rule" data-rule-id="{{ rule.id }}" draggable="true">
-        {{ rule.name }} - {{ rule.label }}
-    </div>
-    {% endfor %}
-</div>
-
-<h2 style="display: flex; align-items: center; justify-content: space-between;">
-    Inactive Rules
-    <button id="open-rule-modal" class="btn-add">+</button>
-</h2>
-<div id="inactive-rules" class="dropzone">
-    {% for rule in inactive_rules %}
-    <div class="rule" data-rule-id="{{ rule.id }}" draggable="true">
-        {{ rule.name }} - {{ rule.label }}
-    </div>
-    {% endfor %}
-</div>
-
-<div id="uncagorized-transactions" class="transaction-box">
-    <input type="text" id="table-global-filter" placeholder="🔍 Find..." />
-    <div id="transactions-table" class="tabulator custom-theme"></div>
-</div>
-
-
-<div id="rule-modal" class="modal hidden">
-    <div class="modal-content">
-        <span id="close-rule-modal" class="modal-close">&times;</span>
-        <h2>Add New Rule</h2>
-        <form class="minimal-form" method="post" action="/accounts/{{ account.id }}/rules">
-            <div class="form-row">
-                <label for="rule-name">Rule Name</label>
-                <input id="rule-name" type="text" name="name" required>
-            </div>
-            <div class="form-row">
-                <label for="rule-label">Rule Label</label>
-                <input id="rule-label" type="text" name="label" required>
-            </div>
-            <div class="form-row">
-                <label for="rule-percentage">Percentage</label>
-                <input id="rule-percentage" type="number" step="0.01" name="percentage" required>
-            </div>
-            <div class="form-row">
-                <label for="rule-category">Category</label>
-                <select id="rule-category" name="category_id" required>
-                    <option value="">-- Select a Category --</option>
-                    {% for category in categories %}
-                    <option value="{{ category.id }}">{{ category.category }} - {{ category.macro_category }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-row">
-                <label for="rule-regexpr">Rule Regexpr</label>
-                <input id="rule-regexpr" type="text" name="regexpr">
-            </div>
-            <div class="form-row">
-                <label for="rule-date-start">Date Start</label>
-                <input id="rule-date-start" type="date" name="date_start">
-            </div>
-            <div class="form-row">
-                <label for="rule-date-end">Date End</label>
-                <input id="rule-date-end" type="date" name="date_end">
-            </div>
-            <div class="form-row">
-                <button type="submit" class="btn-submit">Add Rule</button>
-            </div>
-        </form>
+<div id="hidden-modal" class="modal hidden">
+    <div class="card card-elevated modal-card">
+        <div class="card-header">
+            <h3 class="card-title">Add new rule</h3>
+            <button id="close-hidden-modal" class="btn btn-ghost btn-icon-only">×</button>
+        </div>
+        <div class="card-body">
+            <form class="minimal-form" method="post" action="/accounts/{{ account.id }}/rules">
+                <div class="form-row">
+                    <label for="rule-name">Rule Name</label>
+                    <input id="rule-name" type="text" name="name" required>
+                </div>
+                <div class="form-row">
+                    <label for="rule-label">Rule Label</label>
+                    <input id="rule-label" type="text" name="label" required>
+                </div>
+                <div class="form-row">
+                    <label for="rule-percentage">Percentage</label>
+                    <input id="rule-percentage" type="number" step="0.01" name="percentage" required>
+                </div>
+                <div class="form-row">
+                    <label for="rule-category">Category</label>
+                    <select id="rule-category" name="category_id" required>
+                        <option value="">-- Select a Category --</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.category }} - {{ category.macro_category }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label for="rule-regexpr">Rule Regexpr</label>
+                    <input id="rule-regexpr" type="text" name="regexpr">
+                </div>
+                <div class="form-row">
+                    <label for="rule-date-start">Date Start</label>
+                    <input id="rule-date-start" type="date" name="date_start">
+                </div>
+                <div class="form-row">
+                    <label for="rule-date-end">Date End</label>
+                    <input id="rule-date-end" type="date" name="date_end">
+                </div>
+                <div class="form-row">
+                    <button type="submit" class="btn-submit">Add Rule</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -112,50 +157,90 @@
     </div>
 </template>
 
-
 <script type="module">
-    import { initRuleModal, fetchJson, renderPreview, initDragAndDrop, applyRules } from "/static/js/rules.js";
+    import { fetchJson, renderPreview, applyRules } from "/static/js/rules.js";
+    import { initHiddenModal } from "/static/js/modals.js";
     import { initTable, deleteFromTable } from "/static/js/tables.js";
-
 
     document.addEventListener("DOMContentLoaded", () => {
         const accountId = document.body.dataset.accountId;
 
-        initRuleModal("open-rule-modal", "rule-modal", "close-rule-modal");
+        initHiddenModal("open-hidden-modal", "hidden-modal", "close-hidden-modal");
 
         const applyBtn = document.getElementById("apply-rules-btn");
         const applyModal = document.getElementById("apply-rules-modal");
         const closeApply = document.getElementById("close-apply-rules-modal");
         const previewList = document.getElementById("preview-list");
         const confirmBtn = document.getElementById("confirm-apply-rules");
+        const cancelBtn = document.getElementById("cancel-apply-rules");
         const conflictSelections = {};
-
-        initRuleModal("apply-rules-btn", "apply-rules-modal", "close-apply-rules-modal");
 
         applyBtn.addEventListener("click", async () => {
             try {
                 const previewData = await fetchJson(`/accounts/${accountId}/rules/preview_apply_rules`);
                 renderPreview(previewData, previewList, conflictSelections);
+                applyModal.classList.remove("hidden");
             } catch (err) {
                 previewList.innerHTML = `<div style="color:red;">Errore generando preview: ${err}</div>`;
             }
+        });
+
+        closeApply.addEventListener("click", () => {
+            applyModal.classList.add("hidden");
+        });
+
+        cancelBtn.addEventListener("click", () => {
+            applyModal.classList.add("hidden");
         });
 
         confirmBtn.addEventListener("click", () => {
             applyRules(accountId, conflictSelections, applyModal);
         });
 
+        document.querySelectorAll('.switch input[type="checkbox"]').forEach(cb => {
+            console.log(cb.dataset.ruleId, cb.checked);
+        });
 
-        const dropzones = document.querySelectorAll('.dropzone');
-        const rules = document.querySelectorAll('.rule');
-        initDragAndDrop(dropzones, rules, accountId);
+
+        document.querySelectorAll('.switch input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', async (e) => {
+                const ruleId = e.target.dataset.ruleId;
+                const isActive = e.target.checked;
+                const url = isActive
+                    ? `/accounts/${accountId}/rules/${ruleId}/activate`
+                    : `/accounts/${accountId}/rules/${ruleId}/deactivate`;
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ active: isActive })
+                    });
+
+                    if (response.ok) {
+                        const ruleItem = e.target.closest('.rule-item');
+
+                        ruleItem.classList.toggle('active', isActive);
+                        ruleItem.classList.toggle('inactive', !isActive);
+
+                    } else {
+                        e.target.checked = !isActive;
+                        alert('Errore nel aggiornamento della regola');
+                    }
+                } catch (error) {
+                    e.target.checked = !isActive;
+                    alert('Errore nel aggiornamento della regola');
+                }
+            });
+        });
+
     });
 
     const data = [
         {% for t in uncategorized_transactions %}
     { id: "{{ t.id }}", date: "{{ t.date }}", description: "{{ t.description }}", value: "{{ t.value }} €", perc_to_exclude: "{{ t.perc_to_exclude }} %" },
     {% endfor %}
-  ];
+    ];
 
     const columns = [
         { title: "Date", field: "date", sorter: "date", hozAlign: "center" },
