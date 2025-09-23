@@ -120,6 +120,15 @@ pub async fn restore_full_backup(
             .into_response();
     }
 
+    if let Err(err) = category::Entity::delete_many().exec(&db).await {
+        eprintln!("Errore cancellando categories: {:?}", err);
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Errore eliminando categorie",
+        )
+            .into_response();
+    }
+
     if let Err(err) = transaction::Entity::delete_many().exec(&db).await {
         eprintln!("Errore cancellando transazioni: {:?}", err);
         return (
@@ -145,6 +154,11 @@ pub async fn restore_full_backup(
             "Errore eliminando account_rules",
         )
             .into_response();
+    }
+
+    if let Err(err) = rule::Entity::delete_many().exec(&db).await {
+        eprintln!("Errore cancellando rules: {:?}", err);
+        return (StatusCode::INTERNAL_SERVER_ERROR, "Errore eliminando rules").into_response();
     }
 
     if let Err(err) = settings::Entity::delete_many().exec(&db).await {

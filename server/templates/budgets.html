@@ -16,12 +16,90 @@
     </div>
 </div>
 
+<div id="edit-budget-modal" class="modal hidden">
+    <div class="card card-elevated modal-card">
+        <div class="card-header">
+            <h3 class="card-title">Edit budget</h3>
+            <button id="close-edit-budget-modal" class="btn btn-ghost btn-icon-only">×</button>
+        </div>
+        <div class="card-body">
+            <form id="edit-budget-form" class="minimal-form">
+                <input type="hidden" id="edit-budget-id" name="id">
+
+                <div class="form-row">
+                    <label for="edit-budget-name">Name</label>
+                    <input type="text" id="edit-budget-name" name="name" required>
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-budget-account_id">Account</label>
+                    <select id="edit-budget-account_id" name="account_id" required>
+                        <option value="">-- Select an Account --</option>
+                        {% for account in accounts %}
+                        <option value="{{ account.id }}">{{ account.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-budget-value">Value</label>
+                    <input type="number" id="edit-budget-value" name="value" step="1.0">
+                </div>
+
+                <div class="form-row">
+                    <button type="submit" class="btn-submit">Save changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
 <script type="module">
     import { initTable, deleteFromTable } from "/static/js/tables.js";
 
+    function openbudgetModal(rowData) {
+        document.getElementById("edit-budget-id").value = rowData.id;
+        document.getElementById("edit-budget-account_id").value = rowData.account_id;
+        document.getElementById("edit-budget-name").value = rowData.name;
+        document.getElementById("edit-budget-value").value = rowData.value.replace(" €", "");
+        document.getElementById("edit-budget-modal").classList.remove("hidden");
+    }
+
+    document.getElementById("close-edit-budget-modal").addEventListener("click", () => {
+        document.getElementById("edit-budget-modal").classList.add("hidden");
+    });
+
+    document.getElementById("edit-budget-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const id = formData.get("id");
+
+        try {
+            const response = await fetch(`/budgets/${id}`, {
+                method: "POST",
+                body: new URLSearchParams(formData)
+            });
+
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert("Errore aggiornando la transazione");
+            }
+        } catch (err) {
+            alert("Errore di rete: " + err);
+        }
+    });
+
+
+
     const data = [
         {% for budget in budgets %}
-    { id: "{{ budget.model.id }}", name: "{{ budget.model.name }}", value: "{{ budget.model.value }}", account_name: "{{ budget.account_name }}" },
+    {
+        id: "{{ budget.model.id }}",
+            name: "{{ budget.model.name }}", value: "{{ budget.model.value }}", account_id: "{{ budget.model.account_id }}", account_name: "{{ budget.account_name }}"
+    },
     {% endfor %}
   ];
 
@@ -29,6 +107,16 @@
         { title: "Name", field: "name", sorter: "string" },
         { title: "Value", field: "value", sorter: "number" },
         { title: "Account", field: "account_name", sorter: "string" },
+        {
+            title: "",
+            hozAlign: "center",
+            width: 60,
+            formatter: () => `<button class="btn btn-ghost btn-sm">✏️</button>`,
+            cellClick: (e, cell) => {
+                const rowData = cell.getRow().getData();
+                openbudgetModal(rowData);
+            }
+        },
         {
             title: "",
             hozAlign: "center",

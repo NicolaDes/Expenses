@@ -51,6 +51,39 @@
     </div>
 </div>
 
+<div id="edit-category-modal" class="modal hidden">
+    <div class="card card-elevated modal-card">
+        <div class="card-header">
+            <h3 class="card-title">Edit category</h3>
+            <button id="close-edit-category-modal" class="btn btn-ghost btn-icon-only">×</button>
+        </div>
+        <div class="card-body">
+            <form id="edit-category-form" class="minimal-form">
+                <input type="hidden" id="edit-category-id" name="id">
+
+                <div class="form-row">
+                    <label for="edit-category-transaction_type">Transaction Type</label>
+                    <input type="text" id="edit-category-transaction_type" name="transaction_type" required>
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-category-macro_category">Macro Category</label>
+                    <input type="text" id="edit-category-macro_category" name="macro_category" required>
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-category-category">Category</label>
+                    <input type="text" id="edit-category-category" name="category" required>
+                </div>
+
+                <div class="form-row">
+                    <button type="submit" class="btn-submit">Save changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script type="module">
     import { initHiddenModal } from "/static/js/modals.js";
 
@@ -59,6 +92,40 @@
 
 <script type="module">
     import { initTable, deleteFromTable } from "/static/js/tables.js";
+
+    function openbudgetModal(rowData) {
+        document.getElementById("edit-category-id").value = rowData.id;
+        document.getElementById("edit-category-transaction_type").value = rowData.transaction_type;
+        document.getElementById("edit-category-macro_category").value = rowData.macro_category;
+        document.getElementById("edit-category-category").value = rowData.category;
+        document.getElementById("edit-category-modal").classList.remove("hidden");
+    }
+
+    document.getElementById("close-edit-category-modal").addEventListener("click", () => {
+        document.getElementById("edit-category-modal").classList.add("hidden");
+    });
+
+    document.getElementById("edit-category-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const id = formData.get("id");
+
+        try {
+            const response = await fetch(`/categories/${id}`, {
+                method: "POST",
+                body: new URLSearchParams(formData)
+            });
+
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert("Errore aggiornando la categoria");
+            }
+        } catch (err) {
+            alert("Errore di rete: " + err);
+        }
+    });
+
 
     const data = [
         {% for category in categories %}
@@ -70,6 +137,16 @@
         { title: "Transaction Type", field: "transaction_type", sorter: "string" },
         { title: "Macro Category", field: "macro_category", sorter: "string" },
         { title: "Category", field: "category", sorter: "string" },
+        {
+            title: "",
+            hozAlign: "center",
+            width: 60,
+            formatter: () => `<button class="btn btn-ghost btn-sm">✏️</button>`,
+            cellClick: (e, cell) => {
+                const rowData = cell.getRow().getData();
+                openbudgetModal(rowData);
+            }
+        },
         {
             title: "",
             hozAlign: "center",

@@ -71,15 +71,111 @@
     </div>
 </div>
 
+<div id="edit-transaction-modal" class="modal hidden">
+    <div class="card card-elevated modal-card">
+        <div class="card-header">
+            <h2>Add New Transaction</h2>
+            <button id="close-edit-transaction-modal" class="btn btn-ghost btn-icon-only">×</button>
+        </div>
+        <div class="card-body">
+            <form id="edit-transaction-form" class="minimal-form" method="post">
+                <input type="hidden" id="edit-transaction-id" name="id">
+                <input type="hidden" id="edit-transaction-account_id" name="account_id">
+
+                <div class="form-row">
+                    <label for="edit-transaction-description">Description</label>
+                    <input id="edit-transaction-description" type="text" name="description" required>
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-transaction-value">Value</label>
+                    <input id="edit-transaction-value" type="number" step="0.01" name="value" required>
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-transaction-perc_to_exclude">Perc to Exclude</label>
+                    <input id="edit-transaction-perc_to_exclude" type="number" step="0.01" name="perc_to_exclude"
+                        value="0">
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-transaction-label">Label</label>
+                    <input id="edit-transaction-label" type="text" name="label">
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-transaction-date">Date</label>
+                    <input id="edit-transaction-date" type="datetime-local" name="date" required>
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-transaction-category">Category</label>
+                    <select id="edit-transaction-category" name="category_id">
+                        <option value="">-- Select a Category --</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.category }} - {{ category.macro_category }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <button type="submit" class="btn-submit">Save</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
 <script type="module">
     import { initTable, deleteFromTable } from "/static/js/tables.js";
     import { initHiddenModal } from "/static/js/modals.js";
+
+    function opentransactionModal(rowData) {
+        document.getElementById("edit-transaction-id").value = rowData.id;
+        document.getElementById("edit-transaction-account_id").value = rowData.account_id;
+        document.getElementById("edit-transaction-description").value = rowData.description;
+        document.getElementById("edit-transaction-value").value = rowData.value.replace(" €", "");;
+        document.getElementById("edit-transaction-perc_to_exclude").value = rowData.perc_to_exclude.replace(" %", "");
+        document.getElementById("edit-transaction-label").value = rowData.label;
+        document.getElementById("edit-transaction-date").value = rowData.date;
+        document.getElementById("edit-transaction-category").value = rowData.category_id;
+
+        document.getElementById("edit-transaction-modal").classList.remove("hidden");
+    }
+
+    document.getElementById("close-edit-transaction-modal").addEventListener("click", () => {
+        document.getElementById("edit-transaction-modal").classList.add("hidden");
+    });
+
+    document.getElementById("edit-transaction-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const id = formData.get("id");
+
+        try {
+            const response = await fetch(`/transactions/${id}`, {
+                method: "POST",
+                body: new URLSearchParams(formData)
+            });
+
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert("Errore aggiornando la transazione");
+            }
+        } catch (err) {
+            alert("Errore di rete: " + err);
+        }
+    });
+
 
     initHiddenModal("open-hidden-modal", "hidden-modal", "close-hidden-modal");
 
     const data = [
         {% for t in transactions %}
-    { id: "{{ t.txt.id }}", date: "{{ t.txt.date }}", description: "{{ t.txt.description }}", label: "{{ t.txt.label }}", category_name: "{{ t.category_name }}", value: "{{ t.txt.value }} €", perc_to_exclude: "{{ t.txt.perc_to_exclude }} %" },
+    { id: "{{ t.txt.id }}", account_id: "{{ account.id }}", date: "{{ t.txt.date }}", description: "{{ t.txt.description }}", label: "{{ t.txt.label }}", category_id: "{% if let Some(c) = t.txt.category_id %}{{ c }}{% endif %}", category_name: "{{ t.category_name }}", value: "{{ t.txt.value }} €", perc_to_exclude: "{{ t.txt.perc_to_exclude }} %" },
     {% endfor %}
   ];
 
@@ -90,6 +186,16 @@
         { title: "Category", field: "category_name", sorter: "string" },
         { title: "Value", field: "value", sorter: "number" },
         { title: "Excluded percentage", field: "perc_to_exclude", sorter: "number" },
+        {
+            title: "",
+            hozAlign: "center",
+            width: 60,
+            formatter: () => `<button class="btn btn-ghost btn-sm">✏️</button>`,
+            cellClick: (e, cell) => {
+                const rowData = cell.getRow().getData();
+                opentransactionModal(rowData);
+            }
+        },
         {
             title: "",
             hozAlign: "center",

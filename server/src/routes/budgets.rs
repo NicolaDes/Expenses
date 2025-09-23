@@ -1,6 +1,7 @@
 use askama::Template;
-use axum::{extract::Path, http::StatusCode, response::IntoResponse, Extension};
-use sea_orm::{DatabaseConnection, EntityTrait};
+use axum::{extract::Path, http::StatusCode, response::IntoResponse, Extension, Form};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, DatabaseConnection, EntityTrait};
+use serde::Deserialize;
 
 use crate::database::{account, budget};
 
@@ -8,6 +9,7 @@ use crate::database::{account, budget};
 #[template(path = "budgets.html")]
 pub struct BudgetsTemplate<'a> {
     budgets: Vec<BudgetWithCategory>,
+    accounts: Vec<account::Model>,
     menu: &'a str,
 }
 
@@ -15,6 +17,13 @@ pub struct BudgetsTemplate<'a> {
 struct BudgetWithCategory {
     model: budget::Model,
     account_name: String,
+}
+
+#[derive(Deserialize)]
+pub struct BudgetForm {
+    account_id: i32,
+    name: String,
+    value: f64,
 }
 
 pub async fn get_budgets_handler(
@@ -45,8 +54,14 @@ pub async fn get_budgets_handler(
         })
         .collect();
 
+    let accounts = account::Entity::find().all(&db).await.map_err(|err| {
+        eprintln!("Error finding accounts: {:?}", err);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
     let html = BudgetsTemplate {
         budgets,
+        accounts,
         menu: "budgets",
     };
     Ok(axum::response::Html(html.render().unwrap()))
@@ -63,4 +78,28 @@ pub async fn delete_budget(
             axum::http::StatusCode::INTERNAL_SERVER_ERROR
         }
     }
+}
+
+pub async fn edit_budget(
+    Path(budget_id): Path<i32>,
+    Extension(db): Extension<DatabaseConnection>,
+    Form(form): Form<BudgetForm>,
+) -> impl IntoResponse {
+    let mut budget: budget::ActiveModel = budget::Entity::find_by_id(budget_id)
+        .one(&db)
+        .await
+        .expect("Error reading the budget!")
+        .unwrap()
+        .into();
+
+    budget.account_id = Set(form.account_id);
+    budget.name = Set(form.name);
+    budget.value = Set(form.value);
+
+    let _ = budget.update(&db).await.map_err(|err| {
+        eprintln!("Cannot update budget: {}", err);
+        return StatusCode::INTERNAL_SERVER_ERROR;
+    });
+
+    return StatusCode::OK;
 }

@@ -45,7 +45,12 @@
             <div class="rules-list">
                 {% for rule in rules %}
                 <div class="rule-item {% if rule.active %}active{% else %}inactive{% endif %}"
-                    data-rule-id="{{ rule.model.id }}">
+                    data-rule-id="{{ rule.model.id }}" data-name="{{ rule.model.name }}"
+                    data-label="{{ rule.model.label }}" data-percentage="{{ rule.model.percentage }}"
+                    data-category-id="{{ rule.model.category_id }}"
+                    data-regexpr="{% if let Some(r) = rule.model.regexpr %}{{ r }}{% endif %}"
+                    data-date-start="{% if let Some(ds) = rule.model.date_start %}{{ ds }}{% endif %}"
+                    data-date-end="{% if let Some(de) = rule.model.date_end %}{{ de }}{% endif %}">
                     <div class="rule-info">
                         <div class="rule-name">{{ rule.model.name }}</div>
                         <div class="rule-details">
@@ -138,6 +143,65 @@
     </div>
 </div>
 
+<div id="edit-modal" class="modal hidden">
+    <div class="card card-elevated modal-card">
+        <div class="card-header">
+            <h3 class="card-title">Edit rule</h3>
+            <button id="close-edit-modal" class="btn btn-ghost btn-icon-only">×</button>
+        </div>
+        <div class="card-body">
+            <form id="edit-rule-form" class="minimal-form" method="post">
+                <input type="hidden" name="id" id="edit-rule-id">
+
+                <div class="form-row">
+                    <label for="edit-rule-name">Rule Name</label>
+                    <input id="edit-rule-name" type="text" name="name" required>
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-rule-label">Rule Label</label>
+                    <input id="edit-rule-label" type="text" name="label" required>
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-rule-percentage">Percentage</label>
+                    <input id="edit-rule-percentage" type="number" step="0.01" name="percentage" required>
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-rule-category">Category</label>
+                    <select id="edit-rule-category" name="category_id" required>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.category }} - {{ category.macro_category }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-rule-regexpr">Rule Regexpr</label>
+                    <input id="edit-rule-regexpr" type="text" name="regexpr">
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-rule-date-start">Date Start</label>
+                    <input id="edit-rule-date-start" type="date" name="date_start">
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-rule-date-end">Date End</label>
+                    <input id="edit-rule-date-end" type="date" name="date_end">
+                </div>
+
+                <div class="form-row">
+                    <button type="submit" class="btn-submit">Save changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
 <template id="preview-item-template">
     <div class="preview-item">
         <div class="old-values">
@@ -156,6 +220,61 @@
         <div class="conflicts"></div>
     </div>
 </template>
+
+<script type="module">
+    const accountId = document.body.dataset.accountId;
+
+    document.querySelectorAll('.rule-edit-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const ruleItem = e.target.closest('.rule-item');
+
+            document.getElementById("edit-rule-id").value = ruleItem.dataset.ruleId;
+            document.getElementById("edit-rule-name").value = ruleItem.dataset.name;
+            document.getElementById("edit-rule-label").value = ruleItem.dataset.label;
+            document.getElementById("edit-rule-percentage").value = ruleItem.dataset.percentage;
+            document.getElementById("edit-rule-category").value = ruleItem.dataset.categoryId;
+            document.getElementById("edit-rule-regexpr").value = ruleItem.dataset.regexpr || "";
+            document.getElementById("edit-rule-date-start").value = ruleItem.dataset.dateStart || "";
+            document.getElementById("edit-rule-date-end").value = ruleItem.dataset.dateEnd || "";
+
+            document.getElementById("edit-modal").classList.remove("hidden");
+        });
+    });
+
+
+
+    document.getElementById("close-edit-modal").addEventListener("click", () => {
+        document.getElementById("edit-modal").classList.add("hidden");
+    });
+
+
+    document.getElementById("edit-rule-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(e.target);
+        const params = new URLSearchParams(formData);
+        const ruleId = document.getElementById("edit-rule-id").value;
+
+        try {
+            const response = await fetch(`/rules/${ruleId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: params.toString()
+            });
+
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert("Errore durante l'update della regola");
+            }
+        } catch (err) {
+            alert("Errore di rete: " + err);
+        }
+    });
+
+</script>
 
 <script type="module">
     import { fetchJson, renderPreview, applyRules } from "/static/js/rules.js";
@@ -196,11 +315,6 @@
         confirmBtn.addEventListener("click", () => {
             applyRules(accountId, conflictSelections, applyModal);
         });
-
-        document.querySelectorAll('.switch input[type="checkbox"]').forEach(cb => {
-            console.log(cb.dataset.ruleId, cb.checked);
-        });
-
 
         document.querySelectorAll('.switch input[type="checkbox"]').forEach(checkbox => {
             checkbox.addEventListener('change', async (e) => {
