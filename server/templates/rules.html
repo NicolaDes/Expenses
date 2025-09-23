@@ -17,12 +17,108 @@
     </div>
 </div>
 
+<div id="edit-rule-modal" class="modal hidden">
+    <div class="card card-elevated modal-card">
+        <div class="card-header">
+            <h3 class="card-title">Edit rule</h3>
+            <button id="close-edit-rule-modal" class="btn btn-ghost btn-icon-only">×</button>
+        </div>
+        <div class="card-body">
+            <form id="edit-rule-form" class="minimal-form" method="post">
+                <input type="hidden" name="id" id="edit-rule-id">
+
+                <div class="form-row">
+                    <label for="edit-rule-name">Rule Name</label>
+                    <input id="edit-rule-name" type="text" name="name" required>
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-rule-label">Rule Label</label>
+                    <input id="edit-rule-label" type="text" name="label" required>
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-rule-percentage">Percentage</label>
+                    <input id="edit-rule-percentage" type="number" step="0.01" name="percentage" required>
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-rule-category">Category</label>
+                    <select id="edit-rule-category" name="category_id" required>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.category }} - {{ category.macro_category }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-rule-regexpr">Rule Regexpr</label>
+                    <input id="edit-rule-regexpr" type="text" name="regexpr">
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-rule-date-start">Date Start</label>
+                    <input id="edit-rule-date-start" type="date" name="date_start">
+                </div>
+
+                <div class="form-row">
+                    <label for="edit-rule-date-end">Date End</label>
+                    <input id="edit-rule-date-end" type="date" name="date_end">
+                </div>
+
+                <div class="form-row">
+                    <button type="submit" class="btn-submit">Save changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 <script type="module">
     import { initTable, deleteFromTable } from "/static/js/tables.js";
 
+    function openruleModal(rowData) {
+        document.getElementById("edit-rule-id").value = rowData.id;
+        document.getElementById("edit-rule-name").value = rowData.name;
+        document.getElementById("edit-rule-label").value = rowData.label;
+        document.getElementById("edit-rule-percentage").value = rowData.percentage;
+        document.getElementById("edit-rule-category").value = rowData.category_id;
+        document.getElementById("edit-rule-regexpr").value = rowData.regexpr || "";
+        document.getElementById("edit-rule-date-start").value = rowData.dateStart || "";
+        document.getElementById("edit-rule-date-end").value = rowData.dateEnd || "";
+
+
+        document.getElementById("edit-rule-modal").classList.remove("hidden");
+    }
+
+    document.getElementById("close-edit-rule-modal").addEventListener("click", () => {
+        document.getElementById("edit-rule-modal").classList.add("hidden");
+    });
+
+    document.getElementById("edit-rule-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const id = formData.get("id");
+
+        try {
+            const response = await fetch(`/rules/${id}`, {
+                method: "POST",
+                body: new URLSearchParams(formData)
+            });
+
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert("Errore aggiornando la transazione");
+            }
+        } catch (err) {
+            alert("Errore di rete: " + err);
+        }
+    });
+
     const data = [
         {% for rule in rules %}
-    { id: "{{ rule.id }}", name: "{{ rule.name }}", label: "{{ rule.label }}", percentage: "{{ rule.percentage }}", category_name: "{{ rule.category_name }}", regexpr: "{{ rule.regexpr }}", date_start: "{{ rule.date_start }}", date_end: "{{ rule.date_end }}" },
+    { id: "{{ rule.id }}", name: "{{ rule.name }}", label: "{{ rule.label }}", percentage: "{{ rule.percentage }}", category_id: "{% if let Some(r) = rule.category_id %}{{ r }}{% endif %}", category_name: "{{ rule.category_name }}", regexpr: "{{ rule.regexpr }}", date_start: "{{ rule.date_start }}", date_end: "{{ rule.date_end }}" },
     {% endfor %}
   ];
 
@@ -34,6 +130,16 @@
         { title: "Regular Expression", field: "regexpr", sorter: "string" },
         { title: "Date Start", field: "date_start", sorter: "date", hozAlign: "center" },
         { title: "Date End", field: "date_end", sorter: "date", hozAlign: "center" },
+        {
+            title: "",
+            hozAlign: "center",
+            width: 60,
+            formatter: () => `<button class="btn btn-ghost btn-sm">✏️</button>`,
+            cellClick: (e, cell) => {
+                const rowData = cell.getRow().getData();
+                openruleModal(rowData);
+            }
+        },
         {
             title: "",
             hozAlign: "center",

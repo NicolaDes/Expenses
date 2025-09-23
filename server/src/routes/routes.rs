@@ -15,10 +15,10 @@ use crate::routes::{
     account_settings::{get_account_setting_handler, update_setting_handler},
     account_transactions::{add_transaction_handler, get_account_transactions_handler},
     accounts::{create_account, delete_account, get_all_accounts_handler},
-    budgets::{delete_budget, get_budgets_handler},
-    categories::{add_category_handler, delete_category, get_categories_handler},
-    rules::{delete_rule, get_rules_handler},
-    transactions::delete_transaction,
+    budgets::{delete_budget, edit_budget, get_budgets_handler},
+    categories::{add_category_handler, delete_category, edit_category, get_categories_handler},
+    rules::{delete_rule, edit_rule, get_rules_handler},
+    transactions::{delete_transaction, edit_transaction},
     uploader::upload_transaction_file,
     utilities::{get_backup_handler, get_utilities_handler, restore_full_backup},
 };
@@ -71,22 +71,27 @@ pub fn category_routers() -> Router {
         .route("/", get(get_categories_handler))
         .route("/", post(add_category_handler))
         .route("/{category_id}", delete(delete_category))
+        .route("/{category_id}", post(edit_category))
 }
 
 pub fn rule_routers() -> Router {
     Router::new()
         .route("/", get(get_rules_handler))
         .route("/{rule_id}", delete(delete_rule))
+        .route("/{rule_id}", post(edit_rule))
 }
 
 pub fn budget_routers() -> Router {
     Router::new()
         .route("/", get(get_budgets_handler))
         .route("/{budget_id}", delete(delete_budget))
+        .route("/{budget_id}", post(edit_budget))
 }
 
 pub fn transaction_routers() -> Router {
-    Router::new().route("/{transaction_id}", delete(delete_transaction))
+    Router::new()
+        .route("/{transaction_id}", delete(delete_transaction))
+        .route("/{transaction_id}", post(edit_transaction))
 }
 
 pub fn utilities_routers() -> Router {

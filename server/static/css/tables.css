@@ -85,6 +85,17 @@
     -webkit-backdrop-filter: var(--blur-sm);
 }
 
+.tabulator.custom-theme .tabulator-cell button {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px;
+}
+
+.tabulator.custom-theme .tabulator-cell.action-cell {
+    padding: 0;
+}
+
+
 .tabulator.custom-theme .tabulator-row {
     transition: all var(--transition-fast);
     background: var(--color-card-bg);
@@ -159,42 +170,33 @@
 
 .tabulator.custom-theme .delete-btn,
 .tabulator.custom-theme .btn {
-    background: var(--color-navbar-active-bg);
-    color: var(--color-navbar-active-text);
-    border: none;
-    border-radius: var(--radius-md);
-    padding: 6px 12px;
-    cursor: pointer;
-    font-size: 12px;
+    background: transparent;
+    color: var(--color-navbar-link);
+    padding: 10px 24px;
+    font-size: 15px;
     font-weight: 500;
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
     transition: all var(--transition-fast);
     backdrop-filter: var(--blur-sm);
     -webkit-backdrop-filter: var(--blur-sm);
     letter-spacing: -0.005em;
-    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .tabulator.custom-theme .delete-btn:hover,
 .tabulator.custom-theme .btn:hover {
-    background: color-mix(in srgb, var(--color-navbar-active-bg) 85%, black 15%);
     transform: translateY(-4px);
     box-shadow: var(--shadow-xs);
+    background: var(--color-navbar-hover-bg);
+    color: var(--color-navbar-hover-text);
+    transform: translateY(-1px);
+    border-color: var(--color-navbar-hover-text);
 }
 
 .tabulator.custom-theme .delete-btn:active,
 .tabulator.custom-theme .btn:active {
     transform: translateY(0px) scale(0.95);
-}
-
-.tabulator.custom-theme .btn-danger {
-    background: #ff3b30;
-    color: white;
-    border: 1px solid #ff3b30;
-}
-
-.tabulator.custom-theme .btn-danger:hover {
-    background: #d70015;
-    border-color: #d70015;
 }
 
 .tabulator.custom-theme .tabulator-cell.tabulator-selected {
