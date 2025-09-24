@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Expenses Docker Start
+Comment=Avvia i container Docker esistenti
+Exec=bash -c "docker start expenses-database expenses-backend"
+Icon=arkade
+Terminal=false
+Type=Application
+Categories=Utility;
