@@ -13,13 +13,33 @@
             <button id="open-hidden-modal" class="btn btn-primary">
                 <span class="btn-icon">+</span>
             </button>
-            <input type="text" id="table-global-filter" placeholder="🔍 Find..." />
+            <input type="text" id="table-global-filter" class="search-input" placeholder="🔍 Find..." />
         </div>
-        <div class="card-body">
-            <div id="accounts-table" class="tabulator custom-theme"></div>
-        </div>
-    </div>
+        <div class="card-body table-management">
+            <div id="table">
+                <div id="header" class="table-header">
+                    <div class="table-col span-8 sortable" data-field="name">
+                        Name
+                        <span class="sort-indicator">↕</span>
+                    </div>
+                </div>
 
+                {% for account in accounts %}
+                <div class="table-row">
+                    <div class="table-col span-8"><a href="/accounts/{{ account.id }}">{{ account.name }}</a></div>
+                    <button class="delete-btn" onclick='deleteRow("{{ account.id }}", this)'>💀</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="table-pagination">
+            <button id="prev-btn" class="">Previous</button>
+            <span id="page-info" class=""></span>
+            <button id="next-btn" class="">Next</button>
+        </div>
+
+    </div>
 </div>
 
 <div id="hidden-modal" class="modal hidden">
@@ -50,60 +70,43 @@
     import { initHiddenModal } from "/static/js/modals.js";
 
     initHiddenModal("open-hidden-modal", "hidden-modal", "close-hidden-modal");
-
-    document.addEventListener("DOMContentLoaded", () => {
-        document.querySelectorAll(".delete-btn").forEach(btn => {
-            btn.addEventListener("click", async e => {
-                const row = e.target.closest(".account-row");
-                const id = row.dataset.id;
-                const path = `/accounts/${id}`;
-                const message = `Sei sicuro di voler eliminare questo account?`;
-
-                deleteFromTable(path, message, row);
-            });
-        });
-    });
 </script>
 
 
 <script type="module">
-    import { initTable, deleteFromTable } from "/static/js/tables.js";
+    import { CardsList } from "/static/js/table.js";
 
-    const data = [
-        {% for account in accounts %}
-    { id: "{{ account.id }}", name: '<a href="/accounts/{{ account.id }}">{{ account.name }}</a>' },
-    {% endfor %}
-  ];
+    document.addEventListener("DOMContentLoaded", () => {
+        window.cardsList = new CardsList({
+            tableSelector: '#table',
+            headerSelector: '#header',
+            searchInputId: 'table-global-filter',
+            pageInfoId: 'page-info',
+            perPage: 10
+        });
 
-    const columns = [
-        { title: "Account Name", field: "name", formatter: "html" },
-        {
-            title: "",
-            hozAlign: "center",
-            width: 60,
-            formatter: () => `<button class="delete-btn">💀</button>`,
-            cellClick: (e, cell) => {
-                const rowData = cell.getRow().getData();
-                const row = cell.getRow();
-
-                const path = `/accounts/${rowData.id}`;
-                const message = `Sei sicuro di voler eliminare questo account?`;
-
-                deleteFromTable(path, message, row);
-            }
-        }
-    ];
-
-    const table = initTable("#accounts-table", columns, data);
-
-    document.getElementById("table-global-filter").addEventListener("keyup", function () {
-        const val = this.value.toLowerCase();
-        table.setFilter([
-            [
-                { field: "name", type: "like", value: val },
-            ]
-        ]);
+        document.getElementById("prev-btn").addEventListener("click", () => cardsList.prevPage());
+        document.getElementById("next-btn").addEventListener("click", () => cardsList.nextPage());
     });
+
+    function deleteRow(id, btn) {
+
+        const row = btn.closest('.table-row');
+        if (!row) return;
+
+        const confirmed = confirm("Do you want to delete this account?");
+        if (!confirmed) return;
+
+        fetch(`/accounts/${id}`, { method: 'DELETE' })
+            .then(res => {
+                if (!res.ok) throw new Error("Errore eliminazione");
+                cardsList.deleteCard(row);
+            })
+            .catch(err => alert(err.message));
+
+    }
+
+    window.deleteRow = deleteRow;
 </script>
 
 {% endblock %}
