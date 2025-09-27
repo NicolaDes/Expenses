@@ -5,13 +5,48 @@
 <div class="cards-dashboard">
     <div class="card card-area-main card-large">
         <div class="card-header">
-            <button id="open-hidden-modal" class="btn btn-primary">
+            <input type="text" id="table-global-filter" class="search-input" placeholder="🔍 Find Categories..." />
+            <button id="open-hidden-modal" class="btn btn-ghost btn-sm">
                 <span class="btn-icon">+</span>
             </button>
-            <input type="text" id="table-global-filter" placeholder="🔍 Find..." />
         </div>
-        <div class="card-body">
-            <div id="categories-table" class="tabulator custom-theme"></div>
+        <div class="card-body table-management">
+            <div id="table">
+                <div id="header" class="table-header">
+                    <div class="table-col span-2 sortable" data-field="transaction_type">
+                        Transaction Type
+                        <span class="sort-indicator">↕</span>
+                    </div>
+                    <div class="table-col span-4 sortable" data-field="macro_category">
+                        Macro Category
+                        <span class="sort-indicator">↕</span>
+                    </div>
+                    <div class="table-col span-2 sortable" data-field="category">
+                        Category
+                        <span class="sort-indicator">↕</span>
+                    </div>
+                </div>
+
+                {% for category in categories %}
+                <div class="table-row">
+                    <div class="table-col span-2" data-field="transaction_type">{{ category.transaction_type }}</div>
+                    <div class="table-col span-4" data-field="macro_category">{{ category.macro_category }}</div>
+                    <div class="table-col span-2" data-field="category">{{ category.category }} €</div>
+                    <div class="table-actions">
+                        <button class="btn btn-ghost btn-sm"
+                            onclick='editRowModal("{{ category.id }}", "{{ category.transaction_type }}", "{{ category.macro_category }}", "{{ category.category }}")'>Edit</button>
+                        <button class="btn btn-ghost btn-sm" onclick='deleteRow("{{ category.id }}", this)'>Delete</button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="table-pagination">
+                <button id="prev-btn" class="btn btn-ghost btn-sm">Previous</button>
+                <span id="page-info" class="page-info"></span>
+                <button id="next-btn" class="btn btn-ghost btn-sm">Next</button>
+            </div>
+
         </div>
     </div>
 </div>
@@ -43,7 +78,7 @@
                 </div>
 
                 <div class="form-row">
-                    <button type="submit" class="btn-submit">Add Category</button>
+                    <button type="submit" class="btn btn-ghost btn-sm">Add Category</button>
                 </div>
 
             </form>
@@ -77,7 +112,7 @@
                 </div>
 
                 <div class="form-row">
-                    <button type="submit" class="btn-submit">Save changes</button>
+                    <button type="submit" class="btn btn-ghost btn-sm">Save changes</button>
                 </div>
             </form>
         </div>
@@ -90,14 +125,51 @@
     initHiddenModal("open-hidden-modal", "hidden-modal", "close-hidden-modal");
 </script>
 
-<script type="module">
-    import { initTable, deleteFromTable } from "/static/js/tables.js";
 
-    function openbudgetModal(rowData) {
-        document.getElementById("edit-category-id").value = rowData.id;
-        document.getElementById("edit-category-transaction_type").value = rowData.transaction_type;
-        document.getElementById("edit-category-macro_category").value = rowData.macro_category;
-        document.getElementById("edit-category-category").value = rowData.category;
+<script type="module">
+    import { CardsList } from "/static/js/table.js";
+
+    document.addEventListener("DOMContentLoaded", () => {
+        window.cardsList = new CardsList({
+            tableSelector: '#table',
+            headerSelector: '#header',
+            searchInputId: 'table-global-filter',
+            pageInfoId: 'page-info',
+            perPage: 10
+        });
+
+        document.getElementById("prev-btn").addEventListener("click", () => cardsList.prevPage());
+        document.getElementById("next-btn").addEventListener("click", () => cardsList.nextPage());
+    });
+</script>
+
+<script type="module">
+    function deleteRow(id, btn) {
+
+        const row = btn.closest('.table-row');
+        if (!row) return;
+
+        const confirmed = confirm("Sei sicuro di voler eliminare questa categoria?");
+        if (!confirmed) return;
+
+        fetch(`/categories/${id}`, { method: 'DELETE' })
+            .then(res => {
+                if (!res.ok) throw new Error("Errore eliminazione");
+                cardsList.deleteCard(row);
+            })
+            .catch(err => alert(err.message));
+
+    }
+
+    window.deleteRow = deleteRow;
+</script>
+
+<script type="module">
+    function editRowModal(id, transaction_type, macro_category, category) {
+        document.getElementById("edit-category-id").value = id;
+        document.getElementById("edit-category-transaction_type").value = transaction_type;
+        document.getElementById("edit-category-macro_category").value = macro_category;
+        document.getElementById("edit-category-category").value = category;
         document.getElementById("edit-category-modal").classList.remove("hidden");
     }
 
@@ -126,56 +198,7 @@
         }
     });
 
-
-    const data = [
-        {% for category in categories %}
-    { id: "{{ category.id }}", transaction_type: "{{ category.transaction_type }}", macro_category: "{{ category.macro_category }}", category: "{{ category.category }}" },
-    {% endfor %}
-  ];
-
-    const columns = [
-        { title: "Transaction Type", field: "transaction_type", sorter: "string" },
-        { title: "Macro Category", field: "macro_category", sorter: "string" },
-        { title: "Category", field: "category", sorter: "string" },
-        {
-            title: "",
-            hozAlign: "center",
-            width: 60,
-            formatter: () => `<button class="btn btn-ghost btn-sm">✏️</button>`,
-            cellClick: (e, cell) => {
-                const rowData = cell.getRow().getData();
-                openbudgetModal(rowData);
-            }
-        },
-        {
-            title: "",
-            hozAlign: "center",
-            width: 60,
-            formatter: () => `<button class="delete-btn">💀</button>`,
-            cellClick: (e, cell) => {
-                const rowData = cell.getRow().getData();
-                const row = cell.getRow();
-
-                const path = `/categories/${rowData.id}`;
-                const message = `Sei sicuro di voler eliminare questa categoria?`;
-
-                deleteFromTable(path, message, row);
-            }
-        }
-    ];
-
-    const table = initTable("#categories-table", columns, data);
-
-    document.getElementById("table-global-filter").addEventListener("keyup", function () {
-        const val = this.value.toLowerCase();
-        table.setFilter([
-            [
-                { field: "transaction_type", type: "like", value: val },
-                { field: "macro_category", type: "like", value: val },
-                { field: "category", type: "like", value: val },
-            ]
-        ]);
-    });
+    window.editRowModal = editRowModal;
 </script>
 
 {% endblock %}

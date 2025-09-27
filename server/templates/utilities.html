@@ -5,18 +5,22 @@
 {% block content %}
 
 <div class="cards-flex-grid">
-    <div class="card card-span-4 card-row-span-2">
-        <a href="/utilities/backup/export">
-            <button type="button" class="btn-submit">📥 Scarica backup</button>
-        </a>
+    <div class="card">
+        <div class="card-body">
+            <a href="/utilities/backup/export">
+                <button type="button" class="btn btn-ghost btn-sm">📥 Scarica backup</button>
+            </a>
+        </div>
     </div>
 
-    <div class="card card-span-4 card-row-span-2">
-        <form id="restore-form" class="minimal-form" method="post" action="/utilities/restore"
-            enctype="multipart/form-data">
-            <input type="file" name="backup_file" id="backup-file">
-            <button type="submit" class="btn-submit">Ripristina</button>
-        </form>
+    <div class="card">
+        <div class="card-body">
+            <form id="restore-form" class="minimal-form" method="post" action="/utilities/restore"
+                enctype="multipart/form-data">
+                <input type="file" name="backup_file" id="backup-file" class="btn btn-ghost btn-sm">
+                <button type="submit" class="btn btn-ghost btn-sm">Ripristina</button>
+            </form>
+        </div>
     </div>
 </div>
 

@@ -7,14 +7,39 @@
 <div class="cards-stack">
     <div class="card">
         <div class="card-header">
-            <h2>Budgets</h2>
-            <button id="open-hidden-modal" class="btn btn-primary">
+            <input type="text" id="table-global-filter" class="search-input" placeholder="🔍 Find..." />
+            <button id="open-hidden-modal" class="btn btn-ghost btn-sm">
                 <span class="btn-icon">+</span>
             </button>
         </div>
-        <div class="card-body">
-            <input type="text" id="table-global-filter" placeholder="🔍 Find..." />
-            <div id="budgets-table" class="tabulator custom-theme"></div>
+
+        <div class="card-body table-management">
+            <div id="table">
+                <div id="header" class="table-header">
+                    <div class="table-col span-4 sortable" data-field="name">
+                        Name
+                        <span class="sort-indicator">↕</span>
+                    </div>
+                    <div class="table-col span-4 sortable" data-field="value">
+                        Value
+                        <span class="sort-indicator">↕</span>
+                    </div>
+                </div>
+
+                {% for budget in budgets %}
+                <div class="table-row">
+                    <div class="table-col span-4">{{ budget.name }}</div>
+                    <div class="table-col span-4">{{ budget.value }} €</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="table-pagination">
+                <button id="prev-btn" class="btn btn-ghost btn-sm">Previous</button>
+                <span id="page-info" class=""></span>
+                <button id="next-btn" class="btn btn-ghost btn-sm">Next</button>
+            </div>
+
         </div>
     </div>
 </div>
@@ -36,42 +61,35 @@
                     <input id="budget-value" type="number" step="0.01" name="value" required>
                 </div>
                 <div class="form-row">
-                    <button type="submit" class="btn-submit">Add Budget</button>
+                    <button type="submit" class="btn btn-ghost btn-sm">Add Budget</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
+<script type="module">
+    import { CardsList } from "/static/js/table.js";
+
+    document.addEventListener("DOMContentLoaded", () => {
+        window.cardsList = new CardsList({
+            tableSelector: '#table',
+            headerSelector: '#header',
+            searchInputId: 'table-global-filter',
+            pageInfoId: 'page-info',
+            perPage: 10
+        });
+
+        document.getElementById("prev-btn").addEventListener("click", () => cardsList.prevPage());
+        document.getElementById("next-btn").addEventListener("click", () => cardsList.nextPage());
+    })
+</script>
 
 <script type="module">
-    import { initTable, deleteFromTable } from "/static/js/tables.js";
     import { initHiddenModal } from "/static/js/modals.js";
 
     initHiddenModal("open-hidden-modal", "hidden-modal", "close-hidden-modal");
 
-    const data = [
-        {% for b in budgets %}
-    { name: "{{ b.name }}", value: "{{ b.value }}" },
-    {% endfor %}
-  ];
-
-    const columns = [
-        { title: "Name", field: "name", sorter: "string" },
-        { title: "Value", field: "value", sorter: "number" }
-    ];
-
-    const table = initTable("#budgets-table", columns, data);
-
-    document.getElementById("table-global-filter").addEventListener("keyup", function () {
-        const val = this.value.toLowerCase();
-        table.setFilter([
-            [
-                { field: "name", type: "like", value: val },
-                { field: "value", type: "like", value: val },
-            ]
-        ]);
-    });
 </script>
 
 {% endblock %}

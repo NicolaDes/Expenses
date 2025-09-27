@@ -6,13 +6,60 @@
 <div class="cards-stack">
     <div class="card">
         <div class="card-header">
-            <button id="open-hidden-modal" class="btn btn-primary">
+            <input type="text" id="table-global-filter" class="search-input" placeholder="🔍 Find Transactions..." />
+            <button id="open-hidden-modal" class="btn btn-ghost btn-sm">
                 <span class="btn-icon">+</span>
             </button>
         </div>
-        <div class="card-body">
-            <input type="text" id="table-global-filter" placeholder="🔍 Find..." />
-            <div id="transactions-table" class="tabulator custom-theme"></div>
+
+        <div class="card-body table-management">
+            <div id="table">
+                <div id="header" class="table-header">
+                    <div class="table-col span-4 sortable" data-field="description">
+                        Description
+                        <span class="sort-indicator">↕</span>
+                    </div>
+                    <div class="table-col sortable" data-field="value">
+                        Value
+                        <span class="sort-indicator">↕</span>
+                    </div>
+                    <div class="table-col sortable" data-field="date">
+                        Date
+                        <span class="sort-indicator">↕</span>
+                    </div>
+                    <div class="table-col sortable" data-field="category_name">
+                        Category
+                        <span class="sort-indicator">↕</span>
+                    </div>
+                    <div class="table-col sortable" data-field="perc_to_exclude">
+                        Excluded %
+                        <span class="sort-indicator">↕</span>
+                    </div>
+                </div>
+
+                {% for t in transactions %}
+                <div class="table-row">
+                    <div class="table-col span-4">{{ t.txt.description }}</div>
+                    <div class="table-col">{{ t.txt.value }} €</div>
+                    <div class="table-col">{{ t.txt.date }}</div>
+                    <div class="table-col">{{ t.category_name }}</div>
+                    <div class="table-col">{{ t.txt.perc_to_exclude }} %</div>
+                    <div class="table-actions">
+                        <button class="btn btn-ghost btn-sm" data-id="{{ t.txt.id }}"
+                            onclick='editRowModal("{{ t.txt.id }}", "{{ t.txt.account_id }}", "{{ t.txt.description }}", "{{ t.txt.value }}", "{{ t.txt.perc_to_exclude }}", "{{ t.txt.label }}", "{{ t.txt.date }}", "{% if let Some(c) = t.txt.category_id %}{{ c }} {% endif %}")'>Edit</button>
+                        <button class="btn btn-ghost btn-sm" data-id="{{ t.txt.id }}"
+                            onclick='deleteRow("{{ t.txt.id }}", this)'>Delete</button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="table-pagination">
+                <button id="prev-btn" class="btn btn-ghost btn-sm">Previous</button>
+                <span id="page-info" class="page-info"></span>
+                <button id="next-btn" class="btn btn-ghost btn-sm">Next</button>
+            </div>
+
         </div>
     </div>
 </div>
@@ -63,7 +110,7 @@
                 </div>
 
                 <div class="form-row">
-                    <button type="submit" class="btn-submit">Add Transaction</button>
+                    <button type="submit" class="btn btn-ghost btn-sm">Add Transaction</button>
                 </div>
 
             </form>
@@ -120,7 +167,7 @@
                 </div>
 
                 <div class="form-row">
-                    <button type="submit" class="btn-submit">Save</button>
+                    <button type="submit" class="btn btn-ghost btn-sm">Save</button>
                 </div>
 
             </form>
@@ -129,18 +176,53 @@
 </div>
 
 <script type="module">
-    import { initTable, deleteFromTable } from "/static/js/tables.js";
+    import { CardsList } from "/static/js/table.js";
+
+    document.addEventListener("DOMContentLoaded", () => {
+        window.cardsList = new CardsList({
+            tableSelector: '#table',
+            headerSelector: '#header',
+            searchInputId: 'table-global-filter',
+            pageInfoId: 'page-info',
+            perPage: 10
+        });
+
+        document.getElementById("prev-btn").addEventListener("click", () => cardsList.prevPage());
+        document.getElementById("next-btn").addEventListener("click", () => cardsList.nextPage());
+    });
+
+    function deleteRow(id, btn) {
+
+        const row = btn.closest('.table-row');
+        if (!row) return;
+
+        const confirmed = confirm("Sei sicuro di voler eliminare questa transazione?");
+        if (!confirmed) return;
+
+        fetch(`/transactions/${id}`, { method: 'DELETE' })
+            .then(res => {
+                if (!res.ok) throw new Error("Errore eliminazione");
+                cardsList.deleteCard(row);
+            })
+            .catch(err => alert(err.message));
+
+    }
+
+    window.deleteRow = deleteRow;
+</script>
+
+<script type="module">
     import { initHiddenModal } from "/static/js/modals.js";
 
-    function opentransactionModal(rowData) {
-        document.getElementById("edit-transaction-id").value = rowData.id;
-        document.getElementById("edit-transaction-account_id").value = rowData.account_id;
-        document.getElementById("edit-transaction-description").value = rowData.description;
-        document.getElementById("edit-transaction-value").value = rowData.value.replace(" €", "");;
-        document.getElementById("edit-transaction-perc_to_exclude").value = rowData.perc_to_exclude.replace(" %", "");
-        document.getElementById("edit-transaction-label").value = rowData.label;
-        document.getElementById("edit-transaction-date").value = rowData.date;
-        document.getElementById("edit-transaction-category").value = rowData.category_id;
+    function editRowModal(id, account_id, description, value, perc_to_exclude, label, date, category_id) {
+        document.getElementById("edit-transaction-id").value = id;
+        document.getElementById("edit-transaction-account_id").value = account_id;
+        document.getElementById("edit-transaction-description").value = description;
+        document.getElementById("edit-transaction-value").value = value.replace(" €", "");;
+        document.getElementById("edit-transaction-perc_to_exclude").value = perc_to_exclude.replace(" %", "");
+        document.getElementById("edit-transaction-label").value = label;
+        document.getElementById("edit-transaction-date").value = date;
+        document.getElementById("edit-transaction-category").value = Number(category_id);
 
         document.getElementById("edit-transaction-modal").classList.remove("hidden");
     }
@@ -173,60 +255,7 @@
 
     initHiddenModal("open-hidden-modal", "hidden-modal", "close-hidden-modal");
 
-    const data = [
-        {% for t in transactions %}
-    { id: "{{ t.txt.id }}", account_id: "{{ account.id }}", date: "{{ t.txt.date }}", description: "{{ t.txt.description }}", label: "{{ t.txt.label }}", category_id: "{% if let Some(c) = t.txt.category_id %}{{ c }}{% endif %}", category_name: "{{ t.category_name }}", value: "{{ t.txt.value }} €", perc_to_exclude: "{{ t.txt.perc_to_exclude }} %" },
-    {% endfor %}
-  ];
+    window.editRowModal = editRowModal;
 
-    const columns = [
-        { title: "Date", field: "date", sorter: "date", hozAlign: "center" },
-        { title: "Description", field: "description", sorter: "string" },
-        { title: "Label", field: "label", sorter: "string" },
-        { title: "Category", field: "category_name", sorter: "string" },
-        { title: "Value", field: "value", sorter: "number" },
-        { title: "Excluded percentage", field: "perc_to_exclude", sorter: "number" },
-        {
-            title: "",
-            hozAlign: "center",
-            width: 60,
-            formatter: () => `<button class="btn btn-ghost btn-sm">✏️</button>`,
-            cellClick: (e, cell) => {
-                const rowData = cell.getRow().getData();
-                opentransactionModal(rowData);
-            }
-        },
-        {
-            title: "",
-            hozAlign: "center",
-            width: 60,
-            formatter: () => `<button class="delete-btn">💀</button>`,
-            cellClick: (e, cell) => {
-                const rowData = cell.getRow().getData();
-                const row = cell.getRow();
-
-                const path = `/transactions/${rowData.id}`;
-                const message = `Sei sicuro di voler eliminare questa transazione?`;
-
-                deleteFromTable(path, message, row);
-            }
-        }
-    ];
-
-    const table = initTable("#transactions-table", columns, data);
-
-    document.getElementById("table-global-filter").addEventListener("keyup", function () {
-        const val = this.value.toLowerCase();
-        table.setFilter([
-            [
-                { field: "date", type: "like", value: val },
-                { field: "description", type: "like", value: val },
-                { field: "label", type: "like", value: val },
-                { field: "category_name", type: "like", value: val },
-                { field: "value", type: "like", value: val },
-                { field: "perc_to_exclude", type: "like", value: val },
-            ]
-        ]);
-    });
 </script>
 {% endblock %}

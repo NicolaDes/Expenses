@@ -8,11 +8,67 @@
 <div class="cards-dashboard">
     <div class="card card-area-main card-large">
         <div class="card-header">
-            <input type="text" id="table-global-filter" placeholder="🔍 Find..." />
+            <input type="text" id="table-global-filter" class="search-input" placeholder="🔍 Find Rules..." />
         </div>
 
-        <div class="card-body">
-            <div id="rules-table" class="tabulator custom-theme"></div>
+        <div class="card-body table-management">
+            <div id="table">
+                <div id="header" class="table-header">
+                    <div class="table-col sortable" data-field="name">
+                        Name
+                        <span class="sort-indicator">↕</span>
+                    </div>
+                    <div class="table-col sortable" data-field="label">
+                        Label
+                        <span class="sort-indicator">↕</span>
+                    </div>
+                    <div class="table-col sortable" data-field="percentage">
+                        Percentage
+                        <span class="sort-indicator">↕</span>
+                    </div>
+                    <div class="table-col sortable" data-field="category_name">
+                        Category
+                        <span class="sort-indicator">↕</span>
+                    </div>
+                    <div class="table-col sortable span-2" data-field="regexpr">
+                        Regular Expression
+                        <span class="sort-indicator">↕</span>
+                    </div>
+                    <div class="table-col sortable" data-field="date_start">
+                        Date Start
+                        <span class="sort-indicator">↕</span>
+                    </div>
+                    <div class="table-col sortable" data-field="date_end">
+                        Date End
+                        <span class="sort-indicator">↕</span>
+                    </div>
+                </div>
+
+                {% for rule in rules %}
+                <div class="table-row">
+                    <div class="table-col" data-field="name">{{ rule.name }}</div>
+                    <div class="table-col" data-field="label">{{ rule.label }}</div>
+                    <div class="table-col" data-field="percentage">{{ rule.percentage }}</div>
+                    <div class="table-col" data-field="category_name">{{ rule.category_name }}</div>
+                    <div class="table-col span-2" data-field="regexpr">{{ rule.regexpr }}</div>
+                    <div class="table-col" data-field="date_start">{{ rule.date_start }}</div>
+                    <div class="table-col" data-field="date_end">{{ rule.date_end }}</div>
+
+                    <div class="table-actions">
+                        <button class="btn btn-ghost btn-sm"
+                            onclick='editRowModal("{{ rule.id }}", "{{ rule.name }}", "{{ rule.label }}", "{{ rule.percentage }}", "{% if let Some(r) = rule.category_id %}{{ r }}{% endif %}", "{{ rule.regexpr }}", "{{ rule.date_start }}", "{{ rule.date_end }}")'>Edit</button>
+                        <button class="btn btn-ghost btn-sm" onclick='deleteRow("{{ rule.id }}", this)'>Delete</button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="table-pagination">
+                <button id="prev-btn" class="btn btn-ghost btn-sm">Previous</button>
+                <span id="page-info" class="page-info"></span>
+                <button id="next-btn" class="btn btn-ghost btn-sm">Next</button>
+            </div>
+
         </div>
     </div>
 </div>
@@ -68,25 +124,62 @@
                 </div>
 
                 <div class="form-row">
-                    <button type="submit" class="btn-submit">Save changes</button>
+                    <button type="submit" class="btn btn-ghost btn-sm">Save changes</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
 <script type="module">
-    import { initTable, deleteFromTable } from "/static/js/tables.js";
+    import { CardsList } from "/static/js/table.js";
 
-    function openruleModal(rowData) {
-        document.getElementById("edit-rule-id").value = rowData.id;
-        document.getElementById("edit-rule-name").value = rowData.name;
-        document.getElementById("edit-rule-label").value = rowData.label;
-        document.getElementById("edit-rule-percentage").value = rowData.percentage;
-        document.getElementById("edit-rule-category").value = rowData.category_id;
-        document.getElementById("edit-rule-regexpr").value = rowData.regexpr || "";
-        document.getElementById("edit-rule-date-start").value = rowData.dateStart || "";
-        document.getElementById("edit-rule-date-end").value = rowData.dateEnd || "";
+    document.addEventListener("DOMContentLoaded", () => {
+        window.cardsList = new CardsList({
+            tableSelector: '#table',
+            headerSelector: '#header',
+            searchInputId: 'table-global-filter',
+            pageInfoId: 'page-info',
+            perPage: 10
+        });
 
+        document.getElementById("prev-btn").addEventListener("click", () => cardsList.prevPage());
+        document.getElementById("next-btn").addEventListener("click", () => cardsList.nextPage());
+    });
+</script>
+
+
+<script type="module">
+    function deleteRow(id, btn) {
+
+        const row = btn.closest('.table-row');
+        if (!row) return;
+
+        const confirmed = confirm("Sei sicuro di voler eliminare questo budget?");
+        if (!confirmed) return;
+
+        fetch(`/budgets/${id}`, { method: 'DELETE' })
+            .then(res => {
+                if (!res.ok) throw new Error("Errore eliminazione");
+                cardsList.deleteCard(row);
+            })
+            .catch(err => alert(err.message));
+
+    }
+
+    window.deleteRow = deleteRow;
+</script>
+
+<script type="module">
+    function editRowModal(id, name, label, percentage, category_id, regexpr, date_start, date_end) {
+        document.getElementById("edit-rule-id").value = id;
+        document.getElementById("edit-rule-name").value = name;
+        document.getElementById("edit-rule-label").value = label;
+        document.getElementById("edit-rule-percentage").value = percentage;
+        document.getElementById("edit-rule-category").value = category_id;
+        document.getElementById("edit-rule-regexpr").value = regexpr || "";
+        document.getElementById("edit-rule-date-start").value = date_start || "";
+        document.getElementById("edit-rule-date-end").value = date_end || "";
 
         document.getElementById("edit-rule-modal").classList.remove("hidden");
     }
@@ -116,62 +209,6 @@
         }
     });
 
-    const data = [
-        {% for rule in rules %}
-    { id: "{{ rule.id }}", name: "{{ rule.name }}", label: "{{ rule.label }}", percentage: "{{ rule.percentage }}", category_id: "{% if let Some(r) = rule.category_id %}{{ r }}{% endif %}", category_name: "{{ rule.category_name }}", regexpr: "{{ rule.regexpr }}", date_start: "{{ rule.date_start }}", date_end: "{{ rule.date_end }}" },
-    {% endfor %}
-  ];
-
-    const columns = [
-        { title: "Name", field: "name", sorter: "string" },
-        { title: "Label", field: "label", sorter: "string" },
-        { title: "Percentage", field: "percentage", sorter: "number" },
-        { title: "Category", field: "category_name", sorter: "string" },
-        { title: "Regular Expression", field: "regexpr", sorter: "string" },
-        { title: "Date Start", field: "date_start", sorter: "date", hozAlign: "center" },
-        { title: "Date End", field: "date_end", sorter: "date", hozAlign: "center" },
-        {
-            title: "",
-            hozAlign: "center",
-            width: 60,
-            formatter: () => `<button class="btn btn-ghost btn-sm">✏️</button>`,
-            cellClick: (e, cell) => {
-                const rowData = cell.getRow().getData();
-                openruleModal(rowData);
-            }
-        },
-        {
-            title: "",
-            hozAlign: "center",
-            width: 60,
-            formatter: () => `<button class="delete-btn">💀</button>`,
-            cellClick: (e, cell) => {
-                const rowData = cell.getRow().getData();
-                const row = cell.getRow();
-
-                const path = `/rules/${rowData.id}`;
-                const message = `Sei sicuro di voler eliminare questa regola?`;
-
-                deleteFromTable(path, message, row);
-            }
-        }
-    ];
-
-    const table = initTable("#rules-table", columns, data);
-
-    document.getElementById("table-global-filter").addEventListener("keyup", function () {
-        const val = this.value.toLowerCase();
-        table.setFilter([
-            [
-                { field: "name", type: "like", value: val },
-                { field: "label", type: "like", value: val },
-                { field: "percentage", type: "like", value: val },
-                { field: "category_name", type: "like", value: val },
-                { field: "regexpr", type: "like", value: val },
-                { field: "date_start", type: "like", value: val },
-                { field: "date_end", type: "like", value: val },
-            ]
-        ]);
-    });
+    window.editRowModal = editRowModal;
 </script>
 {% endblock %}
