@@ -6,11 +6,12 @@
 <div class="cards-stack">
     <div class="card">
         <div class="card-header">
-            <button id="open-hidden-modal" class="btn btn-primary">
+            <input type="text" id="table-global-filter" class="search-input" placeholder="🔍 Find Transactions..." />
+            <button id="open-hidden-modal" class="btn btn-ghost btn-sm">
                 <span class="btn-icon">+</span>
             </button>
         </div>
-        <input type="text" id="table-global-filter" class="search-input" placeholder="🔍 Find..." />
+
         <div class="card-body table-management">
             <div id="table">
                 <div id="header" class="table-header">
@@ -44,19 +45,19 @@
                     <div class="table-col">{{ t.category_name }}</div>
                     <div class="table-col">{{ t.txt.perc_to_exclude }} %</div>
                     <div class="table-actions">
-                        <button class="edit-btn" data-id="{{ t.txt.id }}"
-                            onclick='editRowModal("{{ t.txt.id }}", "{{ t.txt.account_id }}", "{{ t.txt.description }}", "{{ t.txt.value }}", "{{ t.txt.perc_to_exclude }}", "{{ t.txt.label }}", "{{ t.txt.date }}", "{% if let Some(c) = t.txt.category_id %}{{ c }} {% endif %}")'>✏️</button>
-                        <button class="delete-btn" data-id="{{ t.txt.id }}"
-                            onclick='deleteRow("{{ t.txt.id }}", this)'>💀</button>
+                        <button class="btn btn-ghost btn-sm" data-id="{{ t.txt.id }}"
+                            onclick='editRowModal("{{ t.txt.id }}", "{{ t.txt.account_id }}", "{{ t.txt.description }}", "{{ t.txt.value }}", "{{ t.txt.perc_to_exclude }}", "{{ t.txt.label }}", "{{ t.txt.date }}", "{% if let Some(c) = t.txt.category_id %}{{ c }} {% endif %}")'>Edit</button>
+                        <button class="btn btn-ghost btn-sm" data-id="{{ t.txt.id }}"
+                            onclick='deleteRow("{{ t.txt.id }}", this)'>Delete</button>
                     </div>
                 </div>
                 {% endfor %}
             </div>
 
             <div class="table-pagination">
-                <button id="prev-btn" class="">Previous</button>
-                <span id="page-info" class=""></span>
-                <button id="next-btn" class="">Next</button>
+                <button id="prev-btn" class="btn btn-ghost btn-sm">Previous</button>
+                <span id="page-info" class="page-info"></span>
+                <button id="next-btn" class="btn btn-ghost btn-sm">Next</button>
             </div>
 
         </div>
@@ -109,7 +110,7 @@
                 </div>
 
                 <div class="form-row">
-                    <button type="submit" class="btn-submit">Add Transaction</button>
+                    <button type="submit" class="btn btn-ghost btn-sm">Add Transaction</button>
                 </div>
 
             </form>
@@ -166,7 +167,7 @@
                 </div>
 
                 <div class="form-row">
-                    <button type="submit" class="btn-submit">Save</button>
+                    <button type="submit" class="btn btn-ghost btn-sm">Save</button>
                 </div>
 
             </form>

@@ -8,10 +8,16 @@ function renderPage(cards, filteredCards, currentPage, perPage, pageInfo) {
     const table = cards[0]?.parentNode;
     if (!table) return;
 
-    cardsToShow.forEach(card => {
+    cardsToShow.forEach((card, idx) => {
         const orig = card.__origDisplay || 'grid';
         card.style.display = orig;
         table.appendChild(card);
+
+        card.classList.remove('last-row');
+
+        if (idx === cardsToShow.length - 1) {
+            card.classList.add('last-row');
+        }
     });
 
     const totalPages = Math.ceil(filteredCards.length / perPage) || 1;

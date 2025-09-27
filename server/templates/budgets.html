@@ -7,7 +7,7 @@
 <div class="cards-dashboard">
     <div class="card card-area-main card-large">
         <div class="card-header">
-            <input type="text" id="table-global-filter" class="search-input" placeholder="🔍 Find..." />
+            <input type="text" id="table-global-filter" class="search-input" placeholder="🔍 Find Budgets..." />
         </div>
 
         <div class="card-body table-management">
@@ -33,18 +33,18 @@
                     <div class="table-col span-3" data-field="value">{{ budget.model.value }} €</div>
                     <div class="table-col" data-field="account">{{ budget.account_name }}</div>
                     <div class="table-actions">
-                        <button class="edit-btn"
-                            onclick='editRowModal("{{ budget.model.id }}", "{{ budget.model.name }}", "{{ budget.model.value }}", "{{ budget.model.account_id }}")'>✏️</button>
-                        <button class="delete-btn" onclick='deleteRow("{{ budget.model.id }}", this)'>💀</button>
+                        <button class="btn btn-ghost btn-sm"
+                            onclick='editRowModal("{{ budget.model.id }}", "{{ budget.model.name }}", "{{ budget.model.value }}", "{{ budget.model.account_id }}")'>Edit</button>
+                        <button class="btn btn-ghost btn-sm" onclick='deleteRow("{{ budget.model.id }}", this)'>Delete</button>
                     </div>
                 </div>
                 {% endfor %}
             </div>
 
             <div class="table-pagination">
-                <button id="prev-btn" class="">Previous</button>
-                <span id="page-info" class=""></span>
-                <button id="next-btn" class="">Next</button>
+                <button id="prev-btn" class="btn btn-ghost btn-sm">Previous</button>
+                <span id="page-info" class="page-info"></span>
+                <button id="next-btn" class="btn btn-ghost btn-sm">Next</button>
             </div>
 
         </div>
@@ -83,7 +83,7 @@
                 </div>
 
                 <div class="form-row">
-                    <button type="submit" class="btn-submit">Save changes</button>
+                    <button type="submit" class="btn btn-ghost btn-sm">Save changes</button>
                 </div>
             </form>
         </div>

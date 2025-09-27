@@ -5,15 +5,15 @@
 {% block content %}
 
 
-<div class="cards-dashboard">
+<div class="cards-stack">
 
-    <div class="card card-area-main card-large">
+    <div class="card">
 
         <div class="card-header">
-            <button id="open-hidden-modal" class="btn btn-primary">
+            <input type="text" id="table-global-filter" class="search-input" placeholder="🔍 Find Accounts..." />
+            <button id="open-hidden-modal" class="btn btn-ghost btn-sm">
                 <span class="btn-icon">+</span>
             </button>
-            <input type="text" id="table-global-filter" class="search-input" placeholder="🔍 Find..." />
         </div>
         <div class="card-body table-management">
             <div id="table">
@@ -27,18 +27,16 @@
                 {% for account in accounts %}
                 <div class="table-row">
                     <div class="table-col span-8"><a href="/accounts/{{ account.id }}">{{ account.name }}</a></div>
-                    <button class="delete-btn" onclick='deleteRow("{{ account.id }}", this)'>💀</button>
+                    <button class="btn btn-ghost btn-sm" onclick='deleteRow("{{ account.id }}", this)'>Delete</button>
                 </div>
                 {% endfor %}
             </div>
+            <div class="table-pagination">
+                <button id="prev-btn" class="btn btn-ghost btn-sm">Previous</button>
+                <span id="page-info" class="page-info"></span>
+                <button id="next-btn" class="btn btn-ghost btn-sm">Next</button>
+            </div>
         </div>
-
-        <div class="table-pagination">
-            <button id="prev-btn" class="">Previous</button>
-            <span id="page-info" class=""></span>
-            <button id="next-btn" class="">Next</button>
-        </div>
-
     </div>
 </div>
 
@@ -57,7 +55,7 @@
                 </div>
 
                 <div class="form-row">
-                    <button type="submit" class="btn-submit">Create</button>
+                    <button type="submit" class="btn btn-ghost btn-sm">Create</button>
                 </div>
             </form>
         </div>

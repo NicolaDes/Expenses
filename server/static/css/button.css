@@ -150,18 +150,6 @@
     font-size: 20px;
 }
 
-.btn-icon {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.btn-icon-only {
-    padding: 10px;
-    width: auto;
-    aspect-ratio: 1;
-}
-
 .btn-loading {
     position: relative;
     color: transparent;

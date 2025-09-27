@@ -5,10 +5,10 @@
 <div class="cards-dashboard">
     <div class="card card-area-main card-large">
         <div class="card-header">
-            <button id="open-hidden-modal" class="btn btn-primary">
+            <input type="text" id="table-global-filter" class="search-input" placeholder="🔍 Find Categories..." />
+            <button id="open-hidden-modal" class="btn btn-ghost btn-sm">
                 <span class="btn-icon">+</span>
             </button>
-            <input type="text" id="table-global-filter" class="search-input" placeholder="🔍 Find..." />
         </div>
         <div class="card-body table-management">
             <div id="table">
@@ -33,18 +33,18 @@
                     <div class="table-col span-4" data-field="macro_category">{{ category.macro_category }}</div>
                     <div class="table-col span-2" data-field="category">{{ category.category }} €</div>
                     <div class="table-actions">
-                        <button class="edit-btn"
-                            onclick='editRowModal("{{ category.id }}", "{{ category.transaction_type }}", "{{ category.macro_category }}", "{{ category.category }}")'>✏️</button>
-                        <button class="delete-btn" onclick='deleteRow("{{ category.id }}", this)'>💀</button>
+                        <button class="btn btn-ghost btn-sm"
+                            onclick='editRowModal("{{ category.id }}", "{{ category.transaction_type }}", "{{ category.macro_category }}", "{{ category.category }}")'>Edit</button>
+                        <button class="btn btn-ghost btn-sm" onclick='deleteRow("{{ category.id }}", this)'>Delete</button>
                     </div>
                 </div>
                 {% endfor %}
             </div>
 
             <div class="table-pagination">
-                <button id="prev-btn" class="">Previous</button>
-                <span id="page-info" class=""></span>
-                <button id="next-btn" class="">Next</button>
+                <button id="prev-btn" class="btn btn-ghost btn-sm">Previous</button>
+                <span id="page-info" class="page-info"></span>
+                <button id="next-btn" class="btn btn-ghost btn-sm">Next</button>
             </div>
 
         </div>
@@ -78,7 +78,7 @@
                 </div>
 
                 <div class="form-row">
-                    <button type="submit" class="btn-submit">Add Category</button>
+                    <button type="submit" class="btn btn-ghost btn-sm">Add Category</button>
                 </div>
 
             </form>
@@ -112,7 +112,7 @@
                 </div>
 
                 <div class="form-row">
-                    <button type="submit" class="btn-submit">Save changes</button>
+                    <button type="submit" class="btn btn-ghost btn-sm">Save changes</button>
                 </div>
             </form>
         </div>

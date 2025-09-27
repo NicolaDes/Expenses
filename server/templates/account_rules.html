@@ -4,81 +4,67 @@
 
 {% block content %}
 
-<div class="cards-flex-grid">
-    <div class="card card-span-8 card-row-span-2">
+<div class="cards-stack">
+    <div class="card">
         <div class="card-header">
-            <h2 class="card-title">Uncategorized transactions</h2>
+            <input type="text" id="table-global-filter" class="search-input"
+                placeholder="🔍 Find Uncategorized Transactions..." />
         </div>
 
-        <div class="card-body">
-            <input type="text" id="table-global-filter" class="search-input" placeholder="🔍 Find..." />
-            <div class="card-body table-management">
-                <div id="table">
-                    <div id="header" class="table-header">
-                        <div class="table-col span-2 sortable" data-field="date">
-                            Date
-                            <span class="sort-indicator">↕</span>
-                        </div>
-                        <div class="table-col span-4 sortable" data-field="description">
-                            Description
-                            <span class="sort-indicator">↕</span>
-                        </div>
-                        <div class="table-col sortable" data-field="value">
-                            Value
-                            <span class="sort-indicator">↕</span>
-                        </div>
-                        <div class="table-col sortable" data-field="perc_to_exclude">
-                            Excluded %
-                            <span class="sort-indicator">↕</span>
-                        </div>
+        <div class="card-body table-management">
+            <div id="table">
+                <div id="header" class="table-header">
+                    <div class="table-col span-2 sortable" data-field="date">
+                        Date
+                        <span class="sort-indicator">↕</span>
                     </div>
-
-                    {% for t in uncategorized_transactions %}
-                    <div class="table-row">
-                        <div class="table-col span-2">{{ t.date }}</div>
-                        <div class="table-col span-4">{{ t.description }} €</div>
-                        <div class="table-col">{{ t.value }}</div>
-                        <div class="table-col">{{ t.perc_to_exclude }} %</div>
-                        <div class="table-actions">
-                            <button class="delete-btn" onclick='deleteRow("{{ t.id }}", this)'>💀</button>
-                        </div>
+                    <div class="table-col span-4 sortable" data-field="description">
+                        Description
+                        <span class="sort-indicator">↕</span>
                     </div>
-                    {% endfor %}
+                    <div class="table-col sortable" data-field="value">
+                        Value
+                        <span class="sort-indicator">↕</span>
+                    </div>
+                    <div class="table-col sortable" data-field="perc_to_exclude">
+                        Excluded %
+                        <span class="sort-indicator">↕</span>
+                    </div>
                 </div>
 
-                <div class="table-pagination">
-                    <button id="prev-btn" class="">Previous</button>
-                    <span id="page-info" class=""></span>
-                    <button id="next-btn" class="">Next</button>
+                {% for t in uncategorized_transactions %}
+                <div class="table-row">
+                    <div class="table-col span-2">{{ t.date }}</div>
+                    <div class="table-col span-4">{{ t.description }} €</div>
+                    <div class="table-col">{{ t.value }}</div>
+                    <div class="table-col">{{ t.perc_to_exclude }} %</div>
+                    <div class="table-actions">
+                        <button class="btn btn-ghost btn-sm" onclick='deleteRow("{{ t.id }}", this)'>Delete</button>
+                    </div>
                 </div>
+                {% endfor %}
+            </div>
 
+            <div class="table-pagination">
+                <button id="prev-btn" class="btn btn-ghost btn-sm">Previous</button>
+                <span id="page-info" class="page-info"></span>
+                <button id="next-btn" class="btn btn-ghost btn-sm">Next</button>
             </div>
         </div>
     </div>
 
     <div class="card card-span-4">
         <div class="card-header">
-            <h2 class="card-title">Rules</h2>
-            <p class="card-subtitle">Activate or deactivate a rule</p>
+            <button id="apply-rules-btn" class="btn btn-ghost btn-sm">
+                <span class="btn-icon">⚡</span>
+                Apply active rules
+            </button>
+            <button id="open-hidden-modal" class="btn btn-ghost btn-sm">
+                <span class="btn-icon">+</span>
+            </button>
         </div>
 
         <div class="card-body">
-
-            <div class="rules-controls">
-                <div class="rules-controls-left">
-                    <button id="open-hidden-modal" class="btn btn-primary">
-                        <span class="btn-icon">+</span>
-                    </button>
-                </div>
-                <div class="rules-controls-right">
-                    <button id="apply-rules-btn" class="btn btn-secondary">
-                        <span class="btn-icon">⚡</span>
-                        Apply active rules
-                    </button>
-                </div>
-            </div>
-
-
             <div class="rules-list">
                 {% for rule in rules %}
                 <div class="rule-item {% if rule.active %}active{% else %}inactive{% endif %}"
@@ -101,7 +87,7 @@
                                 data-rule-id="{{ rule.model.id }}">
                             <span class="switch-slider"></span>
                         </label>
-                        <button class="btn btn-ghost btn-sm rule-edit-btn" data-rule-id="{{ rule.model.id }}">
+                        <button class="btn btn-ghost btn-sm" data-rule-id="{{ rule.model.id }}">
                             Edit
                         </button>
                     </div>
@@ -173,7 +159,7 @@
                     <input id="rule-date-end" type="date" name="date_end">
                 </div>
                 <div class="form-row">
-                    <button type="submit" class="btn-submit">Add Rule</button>
+                    <button type="submit" class="btn btn-ghost btn-sm">Add Rule</button>
                 </div>
             </form>
         </div>
@@ -231,7 +217,7 @@
                 </div>
 
                 <div class="form-row">
-                    <button type="submit" class="btn-submit">Save changes</button>
+                    <button type="submit" class="btn btn-ghost btn-sm">Save changes</button>
                 </div>
             </form>
         </div>

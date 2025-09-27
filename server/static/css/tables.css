@@ -28,7 +28,8 @@
 
 .table-header {
     display: grid;
-    border-radius: var(--radius-sm);
+    border-top-left-radius: var(--radius-md);
+    border-top-right-radius: var(--radius-md);
     grid-template-columns: repeat(8, 1fr);
     gap: 8px;
     padding: 12px 16px;
@@ -56,18 +57,24 @@
     align-items: center;
     gap: 8px;
     padding: 12px 16px;
-    margin: 2px;
+    margin: 1px;
     background: var(--color-navbar-bg, #1f1f1f);
-    border-radius: var(--radius-sm, 12px);
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.2));
 }
 
+.table-row.last-row {
+    border-bottom-left-radius: var(--radius-md);
+    border-bottom-right-radius: var(--radius-md);
+}
+
 .table-row:hover {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 255, 255, 0.12);
-    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.25);
+    color: var(--color-navbar-active-text);
+    border-color: rgba(255, 255, 255, 0.50);
     box-shadow: var(--shadow-lg, 0 4px 10px rgba(0, 0, 0, 0.3));
+    transform: translateY(-4px);
+    border-radius: var(--radius-md);
 }
 
 .table-col.span-2 {
@@ -113,16 +120,6 @@
 
 }
 
-
-.table-actions button {
-    padding: 4px 8px;
-    border-radius: var(--radius-sm, 6px);
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background 0.2s;
-}
-
 .table-empty {
     text-align: center;
     padding: 60px 20px;
@@ -135,18 +132,4 @@
     display: flex;
     gap: 8px;
     align-items: center;
-}
-
-.table-pagination button {
-    padding: 8px 12px;
-    border-radius: var(--radius-sm, 6px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: var(--color-navbar-bg, #1f1f1f);
-    color: var(--color-text, #fff);
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.table-pagination button:hover {
-    background: rgba(255, 255, 255, 0.08);
 }

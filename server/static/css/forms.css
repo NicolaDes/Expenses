@@ -47,18 +47,3 @@
     box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
     outline: none;
 }
-
-.minimal-form button {
-    background: var(--color-navbar-active-bg);
-    color: var(--form-button-color, #fff);
-    padding: var(--form-button-padding, 10px 16px);
-    border: none;
-    border-radius: var(--radius-md);
-    font-weight: 500;
-    cursor: pointer;
-    transition: background var(--form-button-transition, 0.2s) ease;
-}
-
-.minimal-form button:hover {
-    background: var(--color-navbar-hover-text);
-}
