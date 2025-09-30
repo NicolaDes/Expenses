@@ -1,7 +1,7 @@
 use crate::{
     database::{
         account::{self, Model as AccountModel},
-        category,
+        budget, category,
         transaction::{self},
     },
     routes::{common::DateRange, report::get_splittable_expenses_report},
@@ -24,6 +24,7 @@ use serde::Serialize;
 struct AccountDetailTemplate<'a> {
     account: &'a AccountModel,
     period_stats: PeriodStats,
+    budgets: Vec<BudgetsTemplate>,
     menu: &'a str,
     sub_menu: &'a str,
 }
@@ -54,6 +55,15 @@ pub struct ChartData {
     mean_montly_expenses: f64,
 }
 
+#[derive(Serialize)]
+pub struct BudgetsTemplate {
+    label: String,
+    value: f64,
+    limit: f64,
+    percentage: i32,
+    year: i32,
+}
+
 pub async fn get_account_detail(
     Path(account_id): Path<i32>,
     Extension(db): Extension<DatabaseConnection>,
@@ -67,12 +77,56 @@ pub async fn get_account_detail(
     let today = Utc::now().date_naive();
     let start_of_year = NaiveDate::from_ymd_opt(today.year(), 1, 1).unwrap();
 
+    let budget_models = budget::Entity::find()
+        .filter(budget::Column::AccountId.eq(account_id))
+        .all(&db)
+        .await
+        .unwrap();
+
+    let mut budgets: Vec<BudgetsTemplate> = vec![];
+
+    for budget_model in budget_models {
+        let mut sum = 0.0;
+
+        let category_option = category::Entity::find()
+            .filter(category::Column::Category.eq(budget_model.name.clone()))
+            .one(&db)
+            .await
+            .unwrap();
+
+        if let Some(category_model) = category_option {
+            let transactions = transaction::Entity::find()
+                .filter(transaction::Column::AccountId.eq(account_id))
+                .filter(transaction::Column::Date.gt(start_of_year))
+                .filter(transaction::Column::CategoryId.eq(category_model.id))
+                .all(&db)
+                .await
+                .unwrap();
+
+            for transaction in transactions {
+                sum = sum
+                    + (transaction.value
+                        - (transaction.value * transaction.perc_to_exclude as f64))
+                        .abs();
+            }
+        }
+
+        budgets.push(BudgetsTemplate {
+            label: budget_model.name.clone(),
+            value: sum,
+            limit: budget_model.value,
+            percentage: ((sum / budget_model.value) * 100.0 as f64) as i32,
+            year: start_of_year.year(),
+        });
+    }
+
     let html = AccountDetailTemplate {
         account: &account_model,
         period_stats: PeriodStats {
             start_date: start_of_year,
             end_date: today,
         },
+        budgets,
         menu: "accounts",
         sub_menu: "detail",
     };

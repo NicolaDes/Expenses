@@ -8,86 +8,133 @@
 <div class="cards-dashboard">
     <div class="card card-area-main card-large">
         <div class="card-header">
-            <form id="date-filter-form" class="minimal-form">
+            <h1>Date Range Analytics</h1>
+            <div style="margin-left: auto;">
+                <form id="date-filter-form" class="minimal-form">
+            </div>
 
-                <div class="form-row">
-                    <div class="form-col">
-                        <label for="start-date">Start Date</label>
-                        <input type="date" id="start-date" name="start_date" value="{{ period_stats.start_date }}">
-                    </div>
-                    <div class="form-col">
-                        <label for="end-date">End Date</label>
-                        <input type="date" id="end-date" name="end_date" value="{{ period_stats.end_date }}">
-                    </div>
-                    <div class="form-col">
-                        <button type="submit" class="btn btn-ghost btn-sm">Filter</button>
-                    </div>
+            <div class="form-row">
+                <div class="form-col">
+                    <label for="start-date">Start Date</label>
+                    <input type="date" id="start-date" name="start_date" value="{{ period_stats.start_date }}">
                 </div>
+                <div class="form-col">
+                    <label for="end-date">End Date</label>
+                    <input type="date" id="end-date" name="end_date" value="{{ period_stats.end_date }}">
+                </div>
+                <div class="form-col">
+                    <button type="submit" class="btn btn-ghost btn-sm">Filter</button>
+                </div>
+            </div>
             </form>
         </div>
         <div class="card-body">
             <div class="cards-flex-grid">
-                <div class="chart-card stat-card card-span-4 card-row-span-2">
-                    <h4>📈 Montly Trend</h4>
-                    <canvas id="montlyTrendChart"></canvas>
+                <div class="chart-card stat-card card-span-8 card-row-span-2">
+                    <div class="card-body">
+                        <h4>📈 Montly Trend</h4>
+                    </div>
+                    <div class="card-header">
+                        <canvas id="montlyTrendChart"></canvas>
+                    </div>
                 </div>
 
                 <div class="chart-card stat-card card-span-4 card-row-span-2">
-                    <h4>📊 Montly Income vs Outcome</h4>
-                    <canvas id="incomeVsExpenseChart"></canvas>
-                </div>
-
-                <div class="chart-card stat-card card-span-2 card-row-span-2">
-                    <h4>💰 Category Income</h4>
-                    <canvas id="incomeByCategory"></canvas>
-                </div>
-
-                <div class="chart-card stat-card card-span-2 card-row-span-2">
-                    <h4>💸 Category Expenses</h4>
-                    <canvas id="expenseByCategory"></canvas>
+                    <div class="card-body">
+                        <h4>💸 Category Expenses</h4>
+                    </div>
+                    <div class="card-header">
+                        <canvas id="expenseByCategory"></canvas>
+                    </div>
                 </div>
 
                 <div class="chart-card stat-card card-span-4 card-row-span-2">
-                    <h4>💸 Macro Category Expenses</h4>
-                    <canvas id="expenseByMacroCategory"></canvas>
+                    <div class="card-body">
+                        <h4>💰 Category Income</h4>
+                    </div>
+                    <div class="card-header">
+                        <canvas id="incomeByCategory"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card stat-card card-span-8 card-row-span-2">
+                    <div class="card-body">
+                        <h4>📊 Montly Income vs Outcome</h4>
+                    </div>
+                    <div class="card-header">
+                        <canvas id="incomeVsExpenseChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card stat-card card-span-4 card-row-span-2">
+                    <div class="card-body">
+                        <h4>💸 Macro Category Expenses</h4>
+                    </div>
+                    <div class="card-header">
+                        <canvas id="expenseByMacroCategory"></canvas>
+                    </div>
                 </div>
 
                 <div class="stat-card card-span-2 card-row-span-1">
-                    <h3>💸 Total Income</h3>
-                    <p id="stat-income" class="stat-value negative">€ </p>
+                    <div class="card-header">
+                        <h3>💸 Total Income</h3>
+                    </div>
+                    <div class="card-body">
+                        <p id="stat-income" class="stat-value negative">€ </p>
+                    </div>
                 </div>
 
                 <div class="stat-card card-span-2 card-row-span-1">
-                    <h3>💸 Total Expenses</h3>
-                    <p id="stat-expense" class="stat-value negative">€ </p>
+                    <div class="card-header">
+                        <h3>💸 Total Expenses</h3>
+                    </div>
+                    <div class="card-body">
+                        <p id="stat-expense" class="stat-value negative">€ </p>
+                    </div>
                 </div>
 
                 <div class="stat-card card-span-2 card-row-span-1">
-                    <h3>💰 Net balance</h3>
-                    <p id="stat-balance" class="stat-value">€ </p>
+                    <div class="card-header">
+                        <h3>💰 Net balance</h3>
+                    </div>
+                    <div class="card-body">
+                        <p id="stat-balance" class="stat-value">€ </p>
+                    </div>
                 </div>
 
                 <div class="stat-card card-span-2 card-row-span-1">
-                    <h3>📊 Used Transactions for analytics in current period</h3>
-                    <p id="stat-transactions" class="stat-value"></p>
+                    <div class="card-header">
+                        <h3>📊 Used Transactions for analytics in current period</h3>
+                    </div>
+                    <div class="card-body">
+                        <p id="stat-transactions" class="stat-value"></p>
+                    </div>
                 </div>
 
                 <div class="stat-card card-span-2 card-row-span-1">
-                    <h3>📈 Mean montly income</h3>
-                    <p id="stat-avg-income" class="stat-value">€ </p>
+                    <div class="card-header">
+                        <h3>📈 Mean montly income</h3>
+                    </div>
+                    <div class="card-body">
+                        <p id="stat-avg-income" class="stat-value">€ </p>
+                    </div>
                 </div>
 
                 <div class="stat-card card-span-2 card-row-span-1">
-                    <h3>📉 Mean montly expenses</h3>
-                    <p id="stat-avg-expense" class="stat-value">€ </p>
+                    <div class="card-header">
+                        <h3>📉 Mean montly expenses</h3>
+                    </div>
+                    <div class="card-body">
+                        <p id="stat-avg-expense" class="stat-value">€ </p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card card-area-sidebar card-large">
+    <div class="card-area-sidebar card-large">
         <div class="cards-stack">
-            <div class="card stat-card">
+            <div class="card">
                 <div class="card-header">
                     <label for="transaction-file">File CSV/Excel</label>
                 </div>
@@ -106,7 +153,7 @@
                     </form>
                 </div>
             </div>
-            <div class="card stat-card">
+            <div class="card">
                 <div class="card-header">
                     <h2>Report data range</h2>
                 </div>
@@ -131,7 +178,43 @@
             </div>
         </div>
     </div>
+</div>
 
+<div class="card">
+    <div class="card-header">
+        <h1>Budget for current year</h1>
+    </div>
+    <div class="card-body">
+        <div class="cards-flex-grid">
+            {% for budget in budgets %}
+            <div class="stat-card card-span-4 card-row-span-1">
+                <div class="progress-container" style="margin-bottom: 20px;">
+                    <span class="card-header progress-label">{{budget.label}} for {{budget.year}}</span>
+                    <div class="card-body progress-bar">
+                        {% if budget.percentage < 85 %} <div class="progress-fill success"
+                            style="width: {{budget.percentage}}%">
+                    </div>
+                    {% elif budget.percentage <= 100 %} <div class="progress-fill warning"
+                        style="width: {{budget.percentage}}%">
+                </div>
+                {% else %}
+                <div class="progress-fill danger" style="width: {{budget.percentage}}%"></div>
+                {% endif %}
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+                <span class="progress-value">{{budget.value}}€</span>
+                <span style="font-size: 14px; color: var(--color-label);">of {{budget.limit}}€</span>
+            </div>
+            {% if budget.percentage < 85 %} <span class="status-badge success">Healty</span>
+                {% elif budget.percentage <= 100 %} <span class="status-badge warning">Watch Out</span>
+                    {% else %}
+                    <span class="status-badge danger">Overspent</span>
+                    {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+</div>
 </div>
 
 <div id="upload-overlay" class="overlay hidden">
