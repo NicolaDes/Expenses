@@ -8,7 +8,7 @@
 .stat-card {
     flex: 1;
     padding: var(--stat-card-padding, 24px);
-    background: var(--color-card-bg);
+    background: transparent;
     backdrop-filter: var(--blur-sm);
     -webkit-backdrop-filter: var(--blur-sm);
     border-radius: var(--radius-lg);
@@ -21,11 +21,33 @@
     overflow: hidden;
 }
 
+.stat-card .card-header {
+    padding: 10px 12px 8px 12px;
+    display: block !important;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.12),
+            rgba(255, 255, 255, 0.11));
+}
+
+.stat-card .card-body {
+    padding: 0px 0px;
+    margin-top: 12px;
+    background: transparent;
+    border-radius: var(--radius-lg);
+}
+
 .stat-card:hover {
     box-shadow: var(--shadow-md);
     transform: translateY(-4px);
     border-color: rgba(255, 255, 255, 0.12);
+    background: var(--color-card-bg);
 }
+
+.stat-card:hover .progress-container .card-header {
+    border-color: var(--color-navbar-active-bg);
+}
+
 
 .stat-card h3 {
     font-size: 14px;

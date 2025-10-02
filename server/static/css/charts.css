@@ -1,8 +1,0 @@
-.chart-card {
-    background: var(--color-navbar-bg);
-    backdrop-filter: var(--blur-sm);
-    -webkit-backdrop-filter: var(--blur-sm);
-    border-radius: var(--radius-lg);
-    padding: 20px;
-    box-shadow: var(--shadow-md);
-}

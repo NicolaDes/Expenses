@@ -42,6 +42,15 @@ section:last-child {
     margin-bottom: 0;
 }
 
+sup.positive {
+    color: var(--color-success, green);
+}
+
+sup.negative {
+    color: var(--color-error, red);
+}
+
+
 @media (max-width: 768px) {
     .content {
         margin: 20px auto;

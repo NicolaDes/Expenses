@@ -3,8 +3,8 @@
 {% block title %}Transactions for {{ account.name }}{% endblock %}
 
 {% block content %}
-<div class="cards-stack">
-    <div class="card">
+<div class="cards-dashboard">
+    <div class="card card-area-main card-large">
         <div class="card-header">
             <input type="text" id="table-global-filter" class="search-input" placeholder="🔍 Find Transactions..." />
             <button id="open-hidden-modal" class="btn btn-ghost btn-sm">
@@ -60,6 +60,53 @@
                 <button id="next-btn" class="btn btn-ghost btn-sm">Next</button>
             </div>
 
+        </div>
+    </div>
+
+    <div class="card-area-sidebar card-large">
+        <div class="cards-stack">
+            <div class="card">
+                <div class="card-header">
+                    <label for="transaction-file">File CSV/Excel</label>
+                </div>
+                <div class="card-body">
+                    <form id="upload-form" class="minimal-form" action="/accounts/{{ account.id }}/upload" method="post"
+                        enctype="multipart/form-data">
+                        <div class="form-row">
+                            <div class="dropzone">
+                                Drag and drop the transactions file or click to select it
+                                <input id="transaction-file" type="file" name="file" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <button type="submit" class="btn btn-ghost btn-sm">Upload</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h2>Report data range</h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <form class="minimal-form" id="download-report-form" action="/accounts/{{ account.id }}/report"
+                            method="get">
+                            <div class="form-row">
+                                <label for="start-date-report"></label>
+                                <input type="date" id="start-date-report" name="start">
+                            </div>
+                            <div class="form-row">
+                                <label for="end-date-report"></label>
+                                <input type="date" id="end-date-report" name="end">
+                            </div>
+                            <div class="form-row">
+                                <button type="submit" class="btn btn-ghost btn-sm">📥 Download report</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -174,6 +221,68 @@
         </div>
     </div>
 </div>
+
+<div id="upload-overlay" class="overlay hidden">
+    <div class="loader"></div>
+</div>
+
+<div id="upload-modal" class="modal hidden">
+    <div class="modal-content">
+        <span id="close-modal" class="modal-close">&times;</span>
+        <h3>Upload completed</h3>
+        <ul id="upload-summary">
+        </ul>
+    </div>
+</div>
+
+<script type="module">
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const end = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    const pad = n => n.toString().padStart(2, '0');
+    const format = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+    document.getElementById('start-date-report').value = format(start);
+    document.getElementById('end-date-report').value = format(end);
+
+</script>
+
+<script type="module">
+    const overlay = document.getElementById("upload-overlay");
+    const modal = document.getElementById("upload-modal");
+    const summaryUl = document.getElementById("upload-summary");
+
+    document.getElementById("upload-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!confirm("Stai per importare delle transazioni. Procedere?")) return;
+
+        const form = e.target;
+        const formData = new FormData(form);
+
+        overlay.classList.remove("hidden");
+
+        try {
+            const res = await fetch(form.action, { method: "POST", body: formData });
+            if (!res.ok) throw new Error("Errore durante l'upload!");
+
+            const data = await res.json();
+
+            summaryUl.innerHTML = `<li>Transazioni importate: ${data.rows_imported}</li>`;
+
+            modal.style.display = "flex";
+        } catch (err) {
+            alert(err);
+        } finally {
+            overlay.classList.add("hidden");
+        }
+    });
+
+    document.getElementById("close-modal").addEventListener("click", () => {
+        modal.style.display = "none";
+    });
+
+</script>
 
 <script type="module">
     import { CardsList } from "/static/js/table.js";

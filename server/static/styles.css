@@ -5,17 +5,17 @@
 @import url("css/content.css");
 @import url("css/forms.css");
 @import url("css/tables.css");
-@import url("css/stats.css");
 @import url("css/dropzone.css");
 @import url("css/modal.css");
 @import url("css/button.css");
 @import url("css/preview.css");
 @import url("css/loader.css");
 @import url("css/cards.css");
+@import url("css/stats.css");
 @import url("css/search.css");
 @import url("css/rule.css");
 @import url("css/switch.css");
-@import url("css/charts.css");
+@import url("css/progress.css");
 
 [data-theme="light"] body::before {
     background-image: url("images/big-sure-light.jpg");

@@ -1,0 +1,124 @@
+.progress-container {
+    position: relative;
+    width: 100%;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 12px;
+    background: var(--color-progress-bg);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar.progress-lg {
+    height: 16px;
+}
+
+.progress-bar.progress-sm {
+    height: 8px;
+}
+
+.progress-bar.progress-xs {
+    height: 6px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--color-progress-fill);
+    border-radius: var(--radius-sm);
+    transition: width var(--transition-smooth);
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg,
+            transparent,
+            rgba(255, 255, 255, 0.3),
+            transparent);
+    animation: shimmer 2s infinite;
+}
+
+.progress-fill.no-animation::after {
+    display: none;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.progress-fill.success {
+    background: var(--color-progress-success);
+}
+
+.progress-fill.warning {
+    background: var(--color-progress-warning);
+}
+
+.progress-fill.danger {
+    background: var(--color-progress-danger);
+}
+
+.progress-fill.primary {
+    background: var(--color-progress-fill);
+}
+
+.progress-label {
+    font-size: 13px;
+    color: var(--color-label);
+    font-weight: 500;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.progress-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-heading);
+    margin-top: 8px;
+    display: block;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: var(--radius-xs);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.success {
+    background: rgba(52, 199, 89, 0.15);
+    color: var(--color-progress-success);
+}
+
+.status-badge.warning {
+    background: rgba(255, 149, 0, 0.15);
+    color: var(--color-progress-warning);
+}
+
+.status-badge.danger {
+    background: rgba(255, 59, 48, 0.15);
+    color: var(--color-progress-danger);
+}
+
+.status-badge.info {
+    background: rgba(50, 173, 230, 0.15);
+    color: #32ade6;
+}

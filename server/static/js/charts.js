@@ -1,13 +1,50 @@
 const chartInstances = {};
 
+function mean(values) {
+    return values.reduce((a, b) => a + b, 0) / values.length;
+}
+function stddev(values) {
+    const m = mean(values);
+    const variance = values.reduce((a, b) => a + (b - m) ** 2, 0) / values.length;
+    return Math.sqrt(variance);
+}
+
+function makeTransparent(color, alpha) {
+    if (color.startsWith("rgb(")) {
+        return color.replace("rgb(", "rgba(").replace(")", `, ${alpha})`);
+    }
+
+    if (color.startsWith("rgba(")) {
+        return color.replace(/[\d\.]+\)$/, alpha + ")");
+    }
+    return color;
+}
+
+
+function getChartPalette() {
+    const rootStyles = getComputedStyle(document.documentElement);
+    return [
+        rootStyles.getPropertyValue('--chart-color-1').trim(),
+        rootStyles.getPropertyValue('--chart-color-2').trim(),
+        rootStyles.getPropertyValue('--chart-color-3').trim(),
+        rootStyles.getPropertyValue('--chart-color-4').trim(),
+        rootStyles.getPropertyValue('--chart-color-5').trim()
+    ];
+}
+
+function pickRandomColorFromPalette() {
+    const palette = getChartPalette();
+    return palette[Math.floor(Math.random() * palette.length)];
+}
 
 function getLineColors() {
     const rootStyles = getComputedStyle(document.documentElement);
+    const chartColor = pickRandomColorFromPalette();
     return {
         text: rootStyles.getPropertyValue('--color-text').trim(),
         grid: rootStyles.getPropertyValue('--color-rule-border').trim(),
-        line: rootStyles.getPropertyValue('--color-navbar-active-bg').trim(),
-        fill: rootStyles.getPropertyValue('--color-rule-active-bg').trim()
+        line: chartColor,
+        fill: makeTransparent(chartColor, 0.4)
     };
 }
 
@@ -54,7 +91,7 @@ export function createLineChart(id, labels, data, label) {
                 data,
                 fill: true,
                 backgroundColor: colors.fill,
-                borderColor: colors.line,
+                borderColor: colors.border,
                 tension: 0.4,
                 borderWidth: 2
             }]
@@ -144,16 +181,8 @@ export function createMultiLineChart(id, labels, datasets) {
 
     const ctx = document.getElementById(id).getContext('2d');
 
-    function getColorsForDataset(ds) {
-        const rootStyles = getComputedStyle(document.documentElement);
-        return {
-            line: ds.color || rootStyles.getPropertyValue('--color-navbar-active-bg').trim(),
-            fill: ds.fillColor || rootStyles.getPropertyValue('--color-rule-active-bg').trim()
-        };
-    }
-
     const preparedDatasets = datasets.map(ds => {
-        const colors = getColorsForDataset(ds);
+        const colors = getLineColors();
         return {
             label: ds.label,
             data: ds.data,
@@ -180,6 +209,105 @@ export function createMultiLineChart(id, labels, datasets) {
             scales: {
                 x: { ticks: { color: textColor }, grid: { color: gridColor } },
                 y: { ticks: { color: textColor }, grid: { color: gridColor } }
+            }
+        }
+    });
+
+    const observer = new MutationObserver(() => {
+        const textColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text').trim();
+        const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--color-rule-border').trim();
+
+        chartInstances[id].options.plugins.legend.labels.color = textColor;
+        chartInstances[id].options.scales.x.ticks.color = textColor;
+        chartInstances[id].options.scales.x.grid.color = gridColor;
+        chartInstances[id].options.scales.y.ticks.color = textColor;
+        chartInstances[id].options.scales.y.grid.color = gridColor;
+
+        chartInstances[id].data.datasets.forEach((ds, i) => {
+            const colors = getColorsForDataset(datasets[i]);
+            ds.backgroundColor = colors.fill;
+            ds.borderColor = colors.line;
+        });
+
+        chartInstances[id].update();
+    });
+
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    return chartInstances[id];
+}
+
+export function createMultiLineChartWithStats(id, labels, datasets) {
+    if (chartInstances[id]) {
+        chartInstances[id].destroy();
+    }
+    const ctx = document.getElementById(id).getContext('2d');
+
+    function getColorsForDataset(ds) {
+        const rootStyles = getComputedStyle(document.documentElement);
+        return {
+            line: ds.color || rootStyles.getPropertyValue('--color-navbar-active-bg').trim(),
+            fill: ds.fillColor || rootStyles.getPropertyValue('--color-rule-active-bg').trim()
+        };
+    }
+    const colors = getLineColors();
+
+    const preparedDatasets = datasets.flatMap(ds => {
+        const mu = mean(ds.data);
+        const sigma = stddev(ds.data);
+        const pickedColor = pickRandomColorFromPalette();
+        return [{
+            label: ds.label,
+            data: ds.data,
+            fill: true,
+            backgroundColor: pickedColor.fill,
+            borderColor: pickedColor.line,
+            tension: 0.4,
+            borderWidth: 2
+        },
+        {
+            label: "μ + σ (" + ds.label + ")",
+            data: Array(ds.data.length).fill(mu + sigma),
+            type: "line",
+            backgroundColor: pickedColor.fill,
+            borderColor: pickedColor.line,
+            borderDash: [5, 5],
+            pointRadius: 0,
+            fill: false
+        },
+        {
+            label: "μ - σ (" + ds.label + ")",
+            data: Array(ds.data.length).fill(mu - sigma),
+            type: "line",
+            backgroundColor: pickedColor.fill,
+            borderColor: pickedColor.line,
+            borderDash: [5, 5],
+            pointRadius: 0,
+            fill: false
+        },
+        {
+            label: "μ (" + ds.label + ")",
+            data: Array(ds.data.length).fill(mu),
+            type: "line",
+            backgroundColor: pickedColor.fill,
+            borderColor: pickedColor.line,
+            borderDash: [5, 5],
+            pointRadius: 0,
+            fill: false
+        }];
+    });
+
+    chartInstances[id] = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: preparedDatasets
+        },
+        options: {
+            plugins: { legend: { labels: { color: colors.text } } },
+            scales: {
+                x: { ticks: { color: colors.text }, grid: { color: colors.grid } },
+                y: { ticks: { color: colors.text }, grid: { color: colors.grid } }
             }
         }
     });
