@@ -105,40 +105,20 @@
 
 .status-badge.success {
     background: rgba(52, 199, 89, 0.15);
-    color: #34c759;
+    color: var(--color-progress-success);
 }
 
 .status-badge.warning {
     background: rgba(255, 149, 0, 0.15);
-    color: #ff9500;
+    color: var(--color-progress-warning);
 }
 
 .status-badge.danger {
     background: rgba(255, 59, 48, 0.15);
-    color: #ff3b30;
+    color: var(--color-progress-danger);
 }
 
 .status-badge.info {
     background: rgba(50, 173, 230, 0.15);
     color: #32ade6;
-}
-
-[data-theme="dark"] .status-badge.success {
-    background: rgba(50, 215, 75, 0.2);
-    color: #32d74b;
-}
-
-[data-theme="dark"] .status-badge.warning {
-    background: rgba(255, 159, 10, 0.2);
-    color: #ff9f0a;
-}
-
-[data-theme="dark"] .status-badge.danger {
-    background: rgba(255, 69, 58, 0.2);
-    color: #ff453a;
-}
-
-[data-theme="dark"] .status-badge.info {
-    background: rgba(191, 90, 242, 0.2);
-    color: #bf5af2;
 }

@@ -13,7 +13,7 @@ use axum::{
     response::{Html, IntoResponse},
     Json,
 };
-use chrono::{Datelike, NaiveDate, Utc};
+use chrono::{Datelike, Duration, NaiveDate, Utc};
 use sea_orm::{
     ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
 };
@@ -53,6 +53,13 @@ pub struct ChartData {
     transactions_count_used: i32,
     mean_montly_income: f64,
     mean_montly_expenses: f64,
+    mean_income_increment: f64,
+    mean_income_increment_percentage: f64,
+    mean_expenses_increment: f64,
+    mean_expenses_increment_percentage: f64,
+    mean_montly_net_balance: f64,
+    mean_net_balance_increment: f64,
+    mean_net_balance_increment_percentage: f64,
 }
 
 #[derive(Serialize)]
@@ -75,6 +82,8 @@ pub async fn get_account_detail(
         .expect("Account non trovato");
 
     let today = Utc::now().date_naive();
+    let first_of_month = NaiveDate::from_ymd_opt(today.year(), today.month(), 1).unwrap();
+    let last_day_prev_month = first_of_month - Duration::days(1);
     let start_of_year = NaiveDate::from_ymd_opt(today.year(), 1, 1).unwrap();
 
     let budget_models = budget::Entity::find()
@@ -124,7 +133,7 @@ pub async fn get_account_detail(
         account: &account_model,
         period_stats: PeriodStats {
             start_date: start_of_year,
-            end_date: today,
+            end_date: last_day_prev_month,
         },
         budgets,
         menu: "accounts",
@@ -305,6 +314,42 @@ pub async fn get_chart_data(
 
     let months_size = montly_labels.len() as f64;
 
+    let net_balance = income + expenses;
+    let net_balance_vec: Vec<f64> = montly_income
+        .iter()
+        .zip(montly_expenses.iter())
+        .map(|(x, y)| x + y)
+        .collect();
+
+    let income_except_last_month = montly_income[..montly_income.len() - 1].iter().sum::<f64>();
+    let mean_income_increment =
+        (income_except_last_month / (months_size - 1 as f64)) - (income / months_size);
+    let mean_income_increment_percentage = (((income / months_size)
+        - (income_except_last_month / (months_size - 1 as f64)))
+        / (income_except_last_month / (months_size - 1 as f64)))
+        * 100 as f64;
+
+    let expenses_except_last_month = montly_expenses[..montly_expenses.len() - 1]
+        .iter()
+        .sum::<f64>();
+    let mean_expenses_increment =
+        (expenses_except_last_month / (months_size - 1 as f64)) - (expenses / months_size);
+    let mean_expenses_increment_percentage = (((expenses / months_size)
+        - (expenses_except_last_month / (months_size - 1 as f64)))
+        / (expenses_except_last_month / (months_size - 1 as f64)))
+        * 100 as f64;
+
+    let net_balance_except_last_month = net_balance_vec[..net_balance_vec.len() - 1]
+        .iter()
+        .sum::<f64>();
+    let mean_montly_net_balance = net_balance / months_size;
+    let mean_net_balance_increment =
+        (net_balance_except_last_month / (months_size - 1 as f64)) - (net_balance / months_size);
+    let mean_net_balance_increment_percentage = (((net_balance / months_size)
+        - (net_balance_except_last_month / (months_size - 1 as f64)))
+        / (net_balance_except_last_month / (months_size - 1 as f64)))
+        * 100 as f64;
+
     Ok(Json(ChartData {
         montly_labels,
         montly_expenses,
@@ -317,10 +362,17 @@ pub async fn get_chart_data(
         expense_values_macrocategory,
         income,
         expenses,
-        net_balance: income + expenses,
+        net_balance,
         transactions_count,
         transactions_count_used,
         mean_montly_income: income / months_size,
         mean_montly_expenses: expenses / months_size,
+        mean_income_increment,
+        mean_income_increment_percentage,
+        mean_expenses_increment,
+        mean_expenses_increment_percentage,
+        mean_montly_net_balance,
+        mean_net_balance_increment,
+        mean_net_balance_increment_percentage,
     }))
 }

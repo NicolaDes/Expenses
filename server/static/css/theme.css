@@ -53,10 +53,16 @@
 
     --color-progress-bg: rgba(0, 0, 0, 0.06);
     --color-progress-fill: linear-gradient(90deg, #32ade6, #0071e3);
-    --color-progress-warning: linear-gradient(90deg, #ff9500, #ff6b00);
-    --color-progress-danger: linear-gradient(90deg, #ff3b30, #d70015);
-    --color-progress-success: linear-gradient(90deg, #34c759, #30d158);
+    --color-progress-warning: linear-gradient(90deg, rgba(255, 159, 64, 0.9), #ff6b00);
+    --color-progress-danger: linear-gradient(90deg, rgba(255, 99, 132, 0.9), #d70015);
+    --color-progress-success: linear-gradient(90deg, rgba(75, 192, 192, 0.9), #30d158);
     --color-label: #86868b;
+
+    --chart-color-1: rgba(54, 162, 235, 0.9);
+    --chart-color-2: rgba(75, 192, 192, 0.9);
+    --chart-color-3: rgba(255, 99, 132, 0.9);
+    --chart-color-4: rgba(255, 159, 64, 0.9);
+    --chart-color-5: rgba(153, 102, 255, 0.9);
 }
 
 [data-theme="dark"] {
@@ -114,8 +120,15 @@
 
     --color-progress-bg: rgba(255, 255, 255, 0.1);
     --color-progress-fill: linear-gradient(90deg, #bf5af2, #ed5af2);
-    --color-progress-warning: linear-gradient(90deg, #ff9f0a, #ff6b00);
-    --color-progress-danger: linear-gradient(90deg, #ff453a, #d70015);
-    --color-progress-success: linear-gradient(90deg, #32d74b, #30d158);
+    --color-progress-warning: linear-gradient(90deg, rgba(255, 159, 64, 0.7), #ff6b00);
+    --color-progress-danger: linear-gradient(90deg, rgba(255, 99, 132, 0.7), #d70015);
+    --color-progress-success: linear-gradient(90deg, rgba(75, 192, 192, 0.7), #30d158);
+
     --color-label: #98989d;
+
+    --chart-color-1: rgba(54, 162, 235, 0.7);
+    --chart-color-2: rgba(75, 192, 192, 0.7);
+    --chart-color-3: rgba(255, 99, 132, 0.7);
+    --chart-color-4: rgba(255, 159, 64, 0.7);
+    --chart-color-5: rgba(153, 102, 255, 0.7);
 }
