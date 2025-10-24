@@ -170,6 +170,43 @@
                         <canvas id="expenseByMacroCategory"></canvas>
                     </div>
                 </div>
+
+                <div class="chart-card stat-card card-span-6 card-row-span-1">
+                    <div class="card-body">
+                        <h4>📊 Category analyzer</h4>
+
+                        <label for="category_select">Category</label>
+                        <select id="category_select" name="category_id">
+                            <option value="">-- Select a Category --</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" {% if loop.first %}selected{% endif %}>{{
+                                category.category }} - {{ category.macro_category }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="card-header">
+                        <canvas id="categoryAnalyzerChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card stat-card card-span-6 card-row-span-1">
+                    <div class="card-body">
+                        <h4>📊 Tag analyzer</h4>
+
+                        <label for="tag">Tag</label>
+                        <select id="tag_select" name="tag_name">
+                            <option value="">-- Select a Tag --</option>
+                            {% for tag in tags %}
+                            <option value="{{ tag }}" {% if loop.first %}selected{% endif %}>{{ tag }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="card-header">
+                        <canvas id="tagAnalyzerChart"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -310,4 +347,87 @@
     update_charts();
 
 </script>
+
+<script type="module">
+    import { createLineChart } from "/static/js/charts.js";
+
+    const categorySelect = document.getElementById("category_select");
+    const categoryChartId = "categoryAnalyzerChart";
+    const accountId = document.body.dataset.accountId;
+
+    async function updateCategoryChart() {
+        const categoryId = categorySelect.value;
+        if (!categoryId) return;
+
+        const start = document.getElementById("start-date").value;
+        const end = document.getElementById("end-date").value;
+
+        if (!start || !end) return;
+
+        try {
+            const res = await fetch(`/accounts/${accountId}/category/${categoryId}/chart?start=${start}&end=${end}`);
+            if (!res.ok) throw new Error("Unable to retrieve category chart data");
+
+            const data = await res.json();
+            createLineChart(categoryChartId, data.labels, data.values, "Category analysis");
+        } catch (err) {
+            console.error(err);
+            alert("Unable to update category chart...");
+        }
+    }
+
+    categorySelect.addEventListener("change", updateCategoryChart);
+
+    document.getElementById("start-date").addEventListener("change", updateCategoryChart);
+    document.getElementById("end-date").addEventListener("change", updateCategoryChart);
+
+    document.getElementById("date-filter-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await updateCategoryChart();
+    });
+
+    updateCategoryChart();
+</script>
+
+<script type="module">
+    import { createLineChart } from "/static/js/charts.js";
+
+    const tagSelect = document.getElementById("tag_select");
+    const tagChartId = "tagAnalyzerChart";
+    const accountId = document.body.dataset.accountId;
+
+    async function updateTagChart() {
+        const tag = tagSelect.value;
+        if (!tag) return;
+
+        const start = document.getElementById("start-date").value;
+        const end = document.getElementById("end-date").value;
+
+        if (!start || !end) return;
+
+        try {
+            const res = await fetch(`/accounts/${accountId}/tag/${tag}/chart?start=${start}&end=${end}`);
+            if (!res.ok) throw new Error("Unable to retrieve tag chart data");
+
+            const data = await res.json();
+            createLineChart(tagChartId, data.labels, data.values, "Tag analysis");
+        } catch (err) {
+            console.error(err);
+            alert("Unable to update category chart...");
+        }
+    }
+
+    tagSelect.addEventListener("change", updateTagChart);
+
+    document.getElementById("start-date").addEventListener("change", updateTagChart);
+    document.getElementById("end-date").addEventListener("change", updateTagChart);
+
+    document.getElementById("date-filter-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await updateTagChart();
+    });
+
+    updateTagChart();
+</script>
+
 {% endblock %}

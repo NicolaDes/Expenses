@@ -16,6 +16,7 @@ use axum::{
 use chrono::{Datelike, Duration, NaiveDate, Utc};
 use sea_orm::{
     ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
+    QuerySelect,
 };
 use serde::Serialize;
 
@@ -25,6 +26,8 @@ struct AccountDetailTemplate<'a> {
     account: &'a AccountModel,
     period_stats: PeriodStats,
     budgets: Vec<BudgetsTemplate>,
+    categories: Vec<category::Model>,
+    tags: Vec<String>,
     menu: &'a str,
     sub_menu: &'a str,
 }
@@ -63,6 +66,12 @@ pub struct ChartData {
 }
 
 #[derive(Serialize)]
+pub struct CategoryChartData {
+    labels: Vec<String>,
+    values: Vec<f64>,
+}
+
+#[derive(Serialize)]
 pub struct BudgetsTemplate {
     label: String,
     value: f64,
@@ -75,6 +84,13 @@ pub async fn get_account_detail(
     Path(account_id): Path<i32>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> Result<Html<String>, StatusCode> {
+    // TODO: Replace with settigns reading - BEGIN
+    // income-bonds-savings, outcome-bonds-savings, outcome-etf-investments,
+    // income-etf-investments,income-refunds-refunds, outcome-investment-tax,
+    // outcome-crypto-investments, income-crypto-investments
+    let unused_category_ids = [2, 3, 4, 5, 21, 22, 23, 24];
+    // TODO: Replace with settigns reading - END
+
     let account_model = account::Entity::find_by_id(account_id)
         .one(&db)
         .await
@@ -129,6 +145,26 @@ pub async fn get_account_detail(
         });
     }
 
+    let categories = category::Entity::find()
+        .filter(category::Column::Id.is_not_in(unused_category_ids))
+        .all(&db)
+        .await
+        .expect("Errore DB");
+
+    let tags = transaction::Entity::find()
+        .filter(transaction::Column::AccountId.eq(account_id))
+        .filter(transaction::Column::Date.gt(start_of_year))
+        .select_only()
+        .column_as(transaction::Column::Label, "label")
+        .distinct()
+        .into_tuple::<(String,)>()
+        .all(&db)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|(label,)| label)
+        .collect();
+
     let html = AccountDetailTemplate {
         account: &account_model,
         period_stats: PeriodStats {
@@ -136,6 +172,8 @@ pub async fn get_account_detail(
             end_date: last_day_prev_month,
         },
         budgets,
+        categories,
+        tags,
         menu: "accounts",
         sub_menu: "detail",
     };
@@ -374,5 +412,99 @@ pub async fn get_chart_data(
         mean_montly_net_balance,
         mean_net_balance_increment,
         mean_net_balance_increment_percentage,
+    }))
+}
+
+pub async fn get_category_analysis_report(
+    Path((account_id, category_id)): Path<(i32, i32)>,
+    Query(range): Query<DateRange>,
+    Extension(db): Extension<DatabaseConnection>,
+) -> Result<Json<CategoryChartData>, StatusCode> {
+    let mut montly_labels = vec![];
+    let mut montly_values = vec![];
+
+    let start_date = chrono::NaiveDate::parse_from_str(&range.start, "%Y-%m-%d")
+        .map_err(|_| StatusCode::BAD_REQUEST)?;
+    let end_date = chrono::NaiveDate::parse_from_str(&range.end, "%Y-%m-%d")
+        .map_err(|_| StatusCode::BAD_REQUEST)?;
+
+    let transactions = transaction::Entity::find()
+        .filter(transaction::Column::AccountId.eq(account_id))
+        .filter(transaction::Column::CategoryId.eq(category_id))
+        .filter(transaction::Column::Date.between(start_date, end_date))
+        .order_by_asc(transaction::Column::Date)
+        .find_with_related(category::Entity)
+        .all(&db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR);
+
+    for transaction_with_cat in transactions.unwrap() {
+        let montly_label = transaction_with_cat.0.date.format("%b %Y").to_string();
+        let weighted_transaction_value = transaction_with_cat.0.value
+            - (transaction_with_cat.0.value * (transaction_with_cat.0.perc_to_exclude as f64));
+
+        if !montly_labels.contains(&montly_label) {
+            montly_labels.push(montly_label.clone());
+            montly_values.push(0.0);
+        }
+
+        let idx = montly_labels
+            .iter()
+            .position(|l| l == &montly_label)
+            .unwrap();
+
+        montly_values[idx] += weighted_transaction_value.abs();
+    }
+
+    Ok(Json(CategoryChartData {
+        labels: montly_labels,
+        values: montly_values,
+    }))
+}
+
+pub async fn get_tag_analysis_report(
+    Path((account_id, tag)): Path<(i32, String)>,
+    Query(range): Query<DateRange>,
+    Extension(db): Extension<DatabaseConnection>,
+) -> Result<Json<CategoryChartData>, StatusCode> {
+    let mut montly_labels = vec![];
+    let mut montly_values = vec![];
+
+    let start_date = chrono::NaiveDate::parse_from_str(&range.start, "%Y-%m-%d")
+        .map_err(|_| StatusCode::BAD_REQUEST)?;
+    let end_date = chrono::NaiveDate::parse_from_str(&range.end, "%Y-%m-%d")
+        .map_err(|_| StatusCode::BAD_REQUEST)?;
+
+    let transactions = transaction::Entity::find()
+        .filter(transaction::Column::AccountId.eq(account_id))
+        .filter(transaction::Column::Label.eq(tag))
+        .filter(transaction::Column::Date.between(start_date, end_date))
+        .order_by_asc(transaction::Column::Date)
+        .find_with_related(category::Entity)
+        .all(&db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR);
+
+    for transaction_with_cat in transactions.unwrap() {
+        let montly_label = transaction_with_cat.0.date.format("%b %Y").to_string();
+        let weighted_transaction_value = transaction_with_cat.0.value
+            - (transaction_with_cat.0.value * (transaction_with_cat.0.perc_to_exclude as f64));
+
+        if !montly_labels.contains(&montly_label) {
+            montly_labels.push(montly_label.clone());
+            montly_values.push(0.0);
+        }
+
+        let idx = montly_labels
+            .iter()
+            .position(|l| l == &montly_label)
+            .unwrap();
+
+        montly_values[idx] += weighted_transaction_value.abs();
+    }
+
+    Ok(Json(CategoryChartData {
+        labels: montly_labels,
+        values: montly_values,
     }))
 }

@@ -15,7 +15,7 @@
         <div class="card-body table-management">
             <div id="table">
                 <div id="header" class="table-header">
-                    <div class="table-col span-4 sortable" data-field="description">
+                    <div class="table-col span-3 sortable" data-field="description">
                         Description
                         <span class="sort-indicator">↕</span>
                     </div>
@@ -31,6 +31,10 @@
                         Category
                         <span class="sort-indicator">↕</span>
                     </div>
+                    <div class="table-col sortable" data-field="label">
+                        Label
+                        <span class="sort-indicator">↕</span>
+                    </div>
                     <div class="table-col sortable" data-field="perc_to_exclude">
                         Excluded %
                         <span class="sort-indicator">↕</span>
@@ -39,10 +43,11 @@
 
                 {% for t in transactions %}
                 <div class="table-row">
-                    <div class="table-col span-4">{{ t.txt.description }}</div>
+                    <div class="table-col span-3">{{ t.txt.description }}</div>
                     <div class="table-col">{{ t.txt.value }} €</div>
                     <div class="table-col">{{ t.txt.date }}</div>
                     <div class="table-col">{{ t.category_name }}</div>
+                    <div class="table-col">{{ t.txt.label }}</div>
                     <div class="table-col">{{ t.txt.perc_to_exclude }} %</div>
                     <div class="table-actions">
                         <button class="btn btn-ghost btn-sm" data-id="{{ t.txt.id }}"
