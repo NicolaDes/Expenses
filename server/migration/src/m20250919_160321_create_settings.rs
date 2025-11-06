@@ -21,6 +21,18 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(Settings::ValueIndex).integer().not_null())
                     .col(ColumnDef::new(Settings::StarterString).string().not_null())
+                    .col(
+                        ColumnDef::new(Settings::ReportDelimiter)
+                            .string()
+                            .not_null()
+                            .default(";"),
+                    )
+                    .col(
+                        ColumnDef::new(Settings::ReportDecimalSeparator)
+                            .string()
+                            .not_null()
+                            .default(","),
+                    )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_settings_account")
@@ -49,6 +61,8 @@ enum Settings {
     DescriptionIndex,
     ValueIndex,
     StarterString,
+    ReportDelimiter,
+    ReportDecimalSeparator,
 }
 
 #[derive(Iden)]

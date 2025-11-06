@@ -15,7 +15,10 @@ use crate::routes::{
         activate_rule_handler, add_account_rule_handler, apply_rules, deactivate_rule_handler,
         get_account_rules_handler, preview_apply_rules, resolve_conflicts_rules,
     },
-    account_settings::{get_account_setting_handler, update_setting_handler},
+    account_settings::{
+        add_excluded_category_handler, delete_excluded_category_handler,
+        get_account_setting_handler, update_setting_handler,
+    },
     account_transactions::{add_transaction_handler, get_account_transactions_handler},
     accounts::{create_account, delete_account, get_all_accounts_handler},
     budgets::{delete_budget, edit_budget, get_budgets_handler},
@@ -74,6 +77,14 @@ pub fn account_routers() -> Router {
         .route(
             "/{account_id}/tag/{tag}/chart",
             get(get_tag_analysis_report),
+        )
+        .route(
+            "/{accont_id}/settings/exclude_category",
+            post(add_excluded_category_handler),
+        )
+        .route(
+            "/{account_id}/settings/exclude_category/{category_id}",
+            delete(delete_excluded_category_handler),
         )
 }
 

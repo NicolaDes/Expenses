@@ -12,7 +12,10 @@ use serde::Serialize;
 use serde_json::from_slice;
 
 use crate::{
-    database::{account_rule, budget, category, entities::account, rule, settings, transaction},
+    database::{
+        account_rule, budget, category, entities::account, rule, settings,
+        settings_excluded_category, transaction,
+    },
     routes::backup::{get_full_backup, FullBackupDTO},
 };
 
@@ -31,6 +34,7 @@ struct RestoreSummary {
     transactions: usize,
     account_rules: usize,
     settings: usize,
+    excluded_categories: usize,
 }
 
 pub async fn reset_sequence(
@@ -85,6 +89,7 @@ pub async fn restore_full_backup(
         transactions: 0,
         account_rules: 0,
         settings: 0,
+        excluded_categories: 0,
     };
 
     while let Some(field) = multipart.next_field().await.unwrap() {
@@ -166,6 +171,18 @@ pub async fn restore_full_backup(
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             "Errore eliminando settings",
+        )
+            .into_response();
+    }
+
+    if let Err(err) = settings_excluded_category::Entity::delete_many()
+        .exec(&db)
+        .await
+    {
+        eprintln!("Error cancelling exlcuded categories: {:?}", err);
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Error deleting exlcuded categories",
         )
             .into_response();
     }
@@ -255,10 +272,23 @@ pub async fn restore_full_backup(
             description_index: Set(settings.description_index),
             value_index: Set(settings.value_index),
             starter_string: Set(settings.starter_string),
+            report_delimiter: Set(settings.report_delimiter),
+            report_decimal_separator: Set(settings.report_decimal_separator),
         }
         .insert(&db)
         .await;
         summary.settings += 1;
+    }
+
+    for excluded_categories in backup.exlcuded_categories {
+        let _ = settings_excluded_category::ActiveModel {
+            id: Set(excluded_categories.id),
+            settings_id: Set(excluded_categories.settings_id),
+            category_id: Set(excluded_categories.category_id),
+        }
+        .insert(&db)
+        .await;
+        summary.excluded_categories += 1;
     }
 
     // Reset last_value in postgresql
@@ -270,6 +300,10 @@ pub async fn restore_full_backup(
         ("rules", "rules_id_seq"),
         ("account_rules", "account_rules_id_seq"),
         ("settings", "settings_id_seq"),
+        (
+            "settings_excluded_categories",
+            "settings_excluded_categories_id_seq",
+        ),
     ];
 
     for (table, seq) in sequences.iter() {

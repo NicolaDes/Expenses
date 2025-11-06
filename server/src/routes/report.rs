@@ -4,7 +4,10 @@ use axum::{extract::Query, http::StatusCode};
 use csv::WriterBuilder;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder};
 
-use crate::{database::transaction, routes::common::DateRange};
+use crate::{
+    database::{settings, transaction},
+    routes::common::DateRange,
+};
 
 pub async fn get_splittable_expenses_report(
     account_id: i32,
@@ -12,10 +15,18 @@ pub async fn get_splittable_expenses_report(
     excluded_categories: Vec<i32>,
     db: &DatabaseConnection,
 ) -> io::Result<Vec<u8>> {
-    // TODO: Replace with settigns reading - BEGIN
-    let delimiter = b';';
-    let decimal_separator = ",";
-    // TODO: Replace with settigns reading - END
+    let settings = settings::Entity::find()
+        .filter(settings::Column::AccountId.eq(account_id))
+        .one(db)
+        .await
+        .map_err(|e| {
+            eprintln!("Cannot query settings: {:?}", e);
+            io::Error::new(io::ErrorKind::Other, "Database error")
+        })?
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Settings not found"))?;
+
+    let delimiter: u8 = settings.report_delimiter.as_bytes()[0];
+    let decimal_separator = settings.report_decimal_separator.as_str();
 
     let start_date = chrono::NaiveDate::parse_from_str(&range.start, "%Y-%m-%d")
         .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "invalid date"))?;

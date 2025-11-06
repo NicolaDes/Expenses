@@ -1,7 +1,7 @@
 use crate::{
     database::{
         account::{self, Model as AccountModel},
-        budget, category,
+        budget, category, settings,
         transaction::{self},
     },
     routes::{common::DateRange, report::get_splittable_expenses_report},
@@ -15,8 +15,8 @@ use axum::{
 };
 use chrono::{Datelike, Duration, NaiveDate, Utc};
 use sea_orm::{
-    ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
-    QuerySelect,
+    ColumnTrait, DatabaseConnection, EntityTrait, ModelTrait, PaginatorTrait, QueryFilter,
+    QueryOrder, QuerySelect,
 };
 use serde::Serialize;
 
@@ -84,12 +84,29 @@ pub async fn get_account_detail(
     Path(account_id): Path<i32>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> Result<Html<String>, StatusCode> {
-    // TODO: Replace with settigns reading - BEGIN
-    // income-bonds-savings, outcome-bonds-savings, outcome-etf-investments,
-    // income-etf-investments,income-refunds-refunds, outcome-investment-tax,
-    // outcome-crypto-investments, income-crypto-investments
-    let unused_category_ids = [2, 3, 4, 5, 21, 22, 23, 24];
-    // TODO: Replace with settigns reading - END
+    let settings = settings::Entity::find()
+        .filter(settings::Column::AccountId.eq(account_id))
+        .one(&db)
+        .await
+        .map_err(|e| {
+            eprintln!("Cannot query settings: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    let excluded_categories = settings
+        .find_related(category::Entity)
+        .all(&db)
+        .await
+        .map_err(|e| {
+            eprintln!(
+                "Error retrievieng excluded categories from settings: {:?}",
+                e
+            );
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    let unused_category_ids: Vec<i32> = excluded_categories.iter().map(|cat| cat.id).collect();
 
     let account_model = account::Entity::find_by_id(account_id)
         .one(&db)
@@ -186,12 +203,23 @@ pub async fn get_expenses_report(
     Query(range): Query<DateRange>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> impl IntoResponse {
-    // TODO: Replace with settigns reading - BEGIN
-    let excluded_category_ids: Vec<i32> = vec![1, 2, 3, 4, 5, 21, 22, 23, 24];
-    // TODO: Replace with settigns reading - END
+    let settings = settings::Entity::find()
+        .filter(settings::Column::AccountId.eq(account_id))
+        .one(&db)
+        .await
+        .expect("Cannot query settings")
+        .unwrap();
+
+    let excluded_categories = settings
+        .find_related(category::Entity)
+        .all(&db)
+        .await
+        .expect("Error retrievieng excluded categories from settings");
+
+    let unused_category_ids: Vec<i32> = excluded_categories.iter().map(|cat| cat.id).collect();
 
     let data =
-        match get_splittable_expenses_report(account_id, &Query(range), excluded_category_ids, &db)
+        match get_splittable_expenses_report(account_id, &Query(range), unused_category_ids, &db)
             .await
         {
             Ok(csv) => csv,
@@ -217,12 +245,29 @@ pub async fn get_chart_data(
     Query(range): Query<DateRange>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> Result<Json<ChartData>, StatusCode> {
-    // TODO: Replace with settigns reading - BEGIN
-    // income-bonds-savings, outcome-bonds-savings, outcome-etf-investments,
-    // income-etf-investments,income-refunds-refunds, outcome-investment-tax,
-    // outcome-crypto-investments, income-crypto-investments
-    let unused_category_ids = [2, 3, 4, 5, 21, 22, 23, 24];
-    // TODO: Replace with settigns reading - END
+    let settings = settings::Entity::find()
+        .filter(settings::Column::AccountId.eq(account_id))
+        .one(&db)
+        .await
+        .map_err(|e| {
+            eprintln!("Cannot query settings: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    let excluded_categories = settings
+        .find_related(category::Entity)
+        .all(&db)
+        .await
+        .map_err(|e| {
+            eprintln!(
+                "Error retrievieng excluded categories from settings: {:?}",
+                e
+            );
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    let unused_category_ids: Vec<i32> = excluded_categories.iter().map(|cat| cat.id).collect();
 
     let mut montly_labels = vec![];
     let mut montly_expenses = vec![];

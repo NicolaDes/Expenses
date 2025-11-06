@@ -3,7 +3,10 @@ use chrono::{DateTime, NaiveDate, Utc};
 use sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
 
-use crate::database::{account, account_rule, budget, category, rule, settings, transaction};
+use crate::database::{
+    account, account_rule, budget, category, rule, settings, settings_excluded_category,
+    transaction,
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct FullBackupDTO {
@@ -14,6 +17,7 @@ pub struct FullBackupDTO {
     pub categories: Vec<CategoryDTO>,
     pub account_rules: Vec<AccountRuleDTO>,
     pub settings: Vec<AccountSettingsDTO>,
+    pub exlcuded_categories: Vec<SettingsExcludedCategoriesDTO>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -77,6 +81,15 @@ pub struct AccountSettingsDTO {
     pub description_index: i32,
     pub value_index: i32,
     pub starter_string: String,
+    pub report_delimiter: String,
+    pub report_decimal_separator: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SettingsExcludedCategoriesDTO {
+    pub id: i32,
+    pub settings_id: i32,
+    pub category_id: i32,
 }
 
 pub async fn get_full_backup(db: &DatabaseConnection) -> Result<String, StatusCode> {
@@ -189,6 +202,25 @@ pub async fn get_full_backup(db: &DatabaseConnection) -> Result<String, StatusCo
             description_index: account_setting.description_index,
             value_index: account_setting.value_index,
             starter_string: account_setting.starter_string,
+            report_delimiter: account_setting.report_delimiter,
+            report_decimal_separator: account_setting.report_decimal_separator,
+        })
+        .collect();
+
+    let excluded_categories_model = settings_excluded_category::Entity::find()
+        .all(db)
+        .await
+        .map_err(|e| {
+            eprintln!("Error retrieving excluded categories: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    let excluded_categories_dto: Vec<SettingsExcludedCategoriesDTO> = excluded_categories_model
+        .into_iter()
+        .map(|excluded_category| SettingsExcludedCategoriesDTO {
+            id: excluded_category.id,
+            settings_id: excluded_category.settings_id,
+            category_id: excluded_category.category_id,
         })
         .collect();
 
@@ -200,6 +232,7 @@ pub async fn get_full_backup(db: &DatabaseConnection) -> Result<String, StatusCo
         categories: categories_dto,
         account_rules: account_rules_dto,
         settings: settings_dto,
+        exlcuded_categories: excluded_categories_dto,
     };
 
     let json_backup = serde_json::to_string_pretty(&backup).map_err(|e| {
