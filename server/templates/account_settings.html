@@ -31,6 +31,18 @@
                         required>
                 </div>
 
+                <div class="form-row">
+                    <label for="report_delimiter">Starter String:</label>
+                    <input type="text" id="report_delimiter" name="report_delimiter"
+                        value="{{ settings.report_delimiter }}" required>
+                </div>
+
+                <div class="form-row">
+                    <label for="report_decimal_separator">Starter String:</label>
+                    <input type="text" id="report_decimal_separator" name="report_decimal_separator"
+                        value="{{ settings.report_decimal_separator }}" required>
+                </div>
+
                 <input type="hidden" name="account_id" value="{{ account.id }}">
 
                 <div class="form-row">
@@ -41,5 +53,109 @@
     </div>
 
 </div>
+
+<div class="cards-stack">
+    <div class="card">
+        <div class="card-header cards-stack">
+
+            <h1>Excluded Categories</h1>
+            <form class="minimal-form" method="post" action="/accounts/{{ account.id }}/settings/exclude_category">
+                <div class="form-row">
+                    <select id="tx-category" name="category_id">
+                        <option value="">-- Select a Category --</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}">{{category.transaction_type}} - {{ category.category }} -
+                            {{ category.macro_category }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-row">
+                    <button type="submit" class="btn btn-ghost btn-sm">Exclude Category</button>
+                </div>
+            </form>
+
+
+            <input type="text" id="table-global-filter" class="search-input"
+                placeholder="🔍 Find Excluded Category..." />
+
+        </div>
+        <div class="card-body">
+            <div class="card-body table-management">
+                <div id="table">
+                    <div id="header" class="table-header">
+                        <div class="table-col span-3 sortable" data-field="transaction_type">
+                            Transaction Type
+                            <span class="sort-indicator">↕</span>
+                        </div>
+                        <div class="table-col span-2 sortable" data-field="macro_category">
+                            Macro Category
+                            <span class="sort-indicator">↕</span>
+                        </div>
+                        <div class="table-col span-2 sortable" data-field="category">
+                            Category
+                            <span class="sort-indicator">↕</span>
+                        </div>
+                    </div>
+
+                    {% for excat in excluded_categories %}
+                    <div class="table-row">
+                        <div class="table-col span-3">{{ excat.transaction_type }}</div>
+                        <div class="table-col span-2">{{ excat.macro_category }}</div>
+                        <div class="table-col span-2">{{ excat.category }}</div>
+                        <button class="btn btn-ghost btn-sm" data-id="{{ excat.id }}"
+                            onclick='deleteRow("{{ account.id }}", "{{ excat.id }}", this)'>Delete</button>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="table-pagination">
+                    <button id="prev-btn" class="btn btn-ghost btn-sm">Previous</button>
+                    <span id="page-info" class="page-info"></span>
+                    <button id="next-btn" class="btn btn-ghost btn-sm">Next</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+
+<script type="module">
+    import { CardsList } from "/static/js/table.js";
+
+    document.addEventListener("DOMContentLoaded", () => {
+        window.cardsList = new CardsList({
+            tableSelector: '#table',
+            headerSelector: '#header',
+            searchInputId: 'table-global-filter',
+            pageInfoId: 'page-info',
+            perPage: 10
+        });
+
+        document.getElementById("prev-btn").addEventListener("click", () => cardsList.prevPage());
+        document.getElementById("next-btn").addEventListener("click", () => cardsList.nextPage());
+    });
+
+    function deleteRow(account_id, excat_id, btn) {
+
+        const row = btn.closest('.table-row');
+        if (!row) return;
+
+        const confirmed = confirm("Are you sure?");
+        if (!confirmed) return;
+
+        fetch(`/accounts/${account_id}/settings/exclude_category/${excat_id}`, { method: 'DELETE' })
+            .then(res => {
+                if (!res.ok) throw new Error("Errore eliminazione");
+                cardsList.deleteCard(row);
+            })
+            .catch(err => alert(err.message));
+
+    }
+
+    window.deleteRow = deleteRow;
+</script>
 
 {% endblock %}

@@ -59,13 +59,14 @@
             const data = await res.json();
 
             summaryUl.innerHTML = `
-            <li>Account importati: ${data.accounts}</li>
-            <li>Categorie importate: ${data.categories}</li>
-            <li>Regole importate: ${data.rules}</li>
-            <li>Budgets importati: ${data.budgets}</li>
-            <li>Transazioni importate: ${data.transactions}</li>
-            <li>Account rules importate: ${data.account_rules}</li>
-            <li>Settings importate: ${data.settings}</li>
+            <li>Account imported: ${data.accounts}</li>
+            <li>Categorie imported: ${data.categories}</li>
+            <li>Regole imported: ${data.rules}</li>
+            <li>Budgets imported: ${data.budgets}</li>
+            <li>Transazioni imported: ${data.transactions}</li>
+            <li>Account rules imported: ${data.account_rules}</li>
+            <li>Settings imported: ${data.settings}</li>
+            <li>Excluded categories imported: ${data.excluded_categories}</li>
         `;
 
             modal.style.display = "flex";

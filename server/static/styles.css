@@ -16,6 +16,7 @@
 @import url("css/rule.css");
 @import url("css/switch.css");
 @import url("css/progress.css");
+@import url("css/select.css");
 
 [data-theme="light"] body::before {
     background-image: url("images/big-sure-light.jpg");

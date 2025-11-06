@@ -7,12 +7,18 @@ use tower_http::services::ServeDir;
 
 use crate::routes::{
     account_budgets::{add_budget_handler, get_account_budgets_handler},
-    account_detail::{get_account_detail, get_chart_data, get_expenses_report},
+    account_detail::{
+        get_account_detail, get_category_analysis_report, get_chart_data, get_expenses_report,
+        get_tag_analysis_report,
+    },
     account_rules::{
         activate_rule_handler, add_account_rule_handler, apply_rules, deactivate_rule_handler,
         get_account_rules_handler, preview_apply_rules, resolve_conflicts_rules,
     },
-    account_settings::{get_account_setting_handler, update_setting_handler},
+    account_settings::{
+        add_excluded_category_handler, delete_excluded_category_handler,
+        get_account_setting_handler, update_setting_handler,
+    },
     account_transactions::{add_transaction_handler, get_account_transactions_handler},
     accounts::{create_account, delete_account, get_all_accounts_handler},
     budgets::{delete_budget, edit_budget, get_budgets_handler},
@@ -64,6 +70,22 @@ pub fn account_routers() -> Router {
         .route("/{account_id}/settings", post(update_setting_handler))
         .route("/{account_id}/charts", get(get_chart_data))
         .route("/{account_id}/report", get(get_expenses_report))
+        .route(
+            "/{account_id}/category/{category_id}/chart",
+            get(get_category_analysis_report),
+        )
+        .route(
+            "/{account_id}/tag/{tag}/chart",
+            get(get_tag_analysis_report),
+        )
+        .route(
+            "/{accont_id}/settings/exclude_category",
+            post(add_excluded_category_handler),
+        )
+        .route(
+            "/{account_id}/settings/exclude_category/{category_id}",
+            delete(delete_excluded_category_handler),
+        )
 }
 
 pub fn category_routers() -> Router {

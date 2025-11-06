@@ -1,6 +1,5 @@
-use sea_orm::entity::prelude::*;
-
 use crate::database::account;
+use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "settings")]
@@ -12,6 +11,8 @@ pub struct Model {
     pub description_index: i32,
     pub value_index: i32,
     pub starter_string: String,
+    pub report_delimiter: String,
+    pub report_decimal_separator: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -29,5 +30,20 @@ impl ActiveModelBehavior for ActiveModel {}
 impl Related<account::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Account.def()
+    }
+}
+
+// Relazione many-to-many con Category attraverso la tabella di join
+impl Related<super::category::Entity> for Entity {
+    fn to() -> RelationDef {
+        super::settings_excluded_category::Relation::Category.def()
+    }
+
+    fn via() -> Option<RelationDef> {
+        Some(
+            super::settings_excluded_category::Relation::Settings
+                .def()
+                .rev(),
+        )
     }
 }

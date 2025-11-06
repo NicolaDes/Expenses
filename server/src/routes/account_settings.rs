@@ -1,17 +1,28 @@
 use askama::Template;
-use axum::{extract::Path, http::StatusCode, response::Redirect, Extension, Form};
+use axum::{
+    extract::Path,
+    http::StatusCode,
+    response::{IntoResponse, Redirect},
+    Extension, Form,
+};
 use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, ModelTrait,
     QueryFilter,
 };
 
-use crate::database::entities::{account, settings};
+use crate::database::{
+    category,
+    entities::{account, settings},
+    settings_excluded_category,
+};
 
 #[derive(Template)]
 #[template(path = "account_settings.html")]
 struct SettingsTemplate<'a> {
     account: account::Model,
     settings: settings::Model,
+    categories: Vec<category::Model>,
+    excluded_categories: Vec<category::Model>,
     menu: &'a str,
     sub_menu: &'a str,
 }
@@ -22,6 +33,13 @@ pub struct UpdateSettingForm {
     description_index: i32,
     value_index: i32,
     starter_string: String,
+    report_delimiter: String,
+    report_decimal_separator: String,
+}
+
+#[derive(serde::Deserialize)]
+pub struct AddExcludedCategoryForm {
+    category_id: i32,
 }
 
 pub async fn get_account_setting_handler(
@@ -37,7 +55,8 @@ pub async fn get_account_setting_handler(
         })?
         .ok_or(StatusCode::NOT_FOUND)?;
 
-    let settings: settings::Model = match account_data.find_related(settings::Entity).one(&db).await {
+    let settings: settings::Model = match account_data.find_related(settings::Entity).one(&db).await
+    {
         Ok(Some(s)) => s,
         Ok(None) => {
             let new_setting = settings::ActiveModel {
@@ -62,9 +81,28 @@ pub async fn get_account_setting_handler(
         }
     };
 
+    let categories = category::Entity::find().all(&db).await.map_err(|e| {
+        eprint!("Error retrieving categories: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    let excluded_categories = settings
+        .find_related(category::Entity)
+        .all(&db)
+        .await
+        .map_err(|e| {
+            eprint!(
+                "Error retrieving excluded categories from settings: {:?}",
+                e
+            );
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
     let html = SettingsTemplate {
         account: account_data,
         settings,
+        categories,
+        excluded_categories,
         menu: "accounts",
         sub_menu: "settings",
     };
@@ -92,10 +130,75 @@ pub async fn update_setting_handler(
     the_settings.description_index = Set(form.description_index);
     the_settings.value_index = Set(form.value_index);
     the_settings.starter_string = Set(form.starter_string);
+    the_settings.report_delimiter = Set(form.report_delimiter);
+    the_settings.report_decimal_separator = Set(form.report_decimal_separator);
     the_settings.update(&db).await.map_err(|err| {
         println!("Cannot update settings: {}", err);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
     Ok(Redirect::to(&format!("/accounts/{}/settings", account_id)))
+}
+
+pub async fn add_excluded_category_handler(
+    Path(account_id): Path<i32>,
+    Extension(db): Extension<DatabaseConnection>,
+    Form(form): Form<AddExcludedCategoryForm>,
+) -> Result<Redirect, axum::http::StatusCode> {
+    let settings: settings::Model = settings::Entity::find()
+        .filter(settings::Column::AccountId.eq(account_id))
+        .one(&db)
+        .await
+        .map_err(|e| {
+            eprintln!("Errore query settings: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    let the_settings_excluded_category = settings_excluded_category::ActiveModel {
+        settings_id: Set(settings.id),
+        category_id: Set(form.category_id),
+        ..Default::default()
+    };
+
+    if let Err(e) = the_settings_excluded_category.insert(&db).await {
+        eprintln!("Error inserting the excluded category in settings: {:?}", e);
+        return Err(axum::http::StatusCode::BAD_REQUEST);
+    }
+
+    Ok(Redirect::to(&format!("/accounts/{}/settings", account_id)))
+}
+
+pub async fn delete_excluded_category_handler(
+    Path((account_id, category_id)): Path<(i32, i32)>,
+    Extension(db): Extension<DatabaseConnection>,
+) -> impl IntoResponse {
+    let settings: settings::Model = settings::Entity::find()
+        .filter(settings::Column::AccountId.eq(account_id))
+        .one(&db)
+        .await
+        .expect("Cannot find settings!")
+        .unwrap()
+        .into();
+
+    let the_settings_excluded_category: settings_excluded_category::Model =
+        settings_excluded_category::Entity::find()
+            .filter(settings_excluded_category::Column::SettingsId.eq(settings.id))
+            .filter(settings_excluded_category::Column::CategoryId.eq(category_id))
+            .one(&db)
+            .await
+            .expect("Cannot find the settings excluded category!")
+            .unwrap()
+            .into();
+
+    match settings_excluded_category::Entity::delete_by_id(the_settings_excluded_category.id)
+        .exec(&db)
+        .await
+    {
+        Ok(_) => axum::http::StatusCode::NO_CONTENT,
+        Err(err) => {
+            eprintln!("Cannot delete settings_excluded_category: {:?}", err);
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+    }
 }
