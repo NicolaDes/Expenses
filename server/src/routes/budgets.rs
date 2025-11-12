@@ -29,6 +29,7 @@ pub struct BudgetForm {
 pub async fn get_budgets_handler(
     Extension(db): Extension<DatabaseConnection>,
 ) -> Result<impl axum::response::IntoResponse, axum::http::StatusCode> {
+    // TODO: Move into database modules
     let budgets_with_cats = budget::Entity::find()
         .find_with_related(account::Entity)
         .all(&db)
@@ -38,6 +39,7 @@ pub async fn get_budgets_handler(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
+    // TODO: Move into database modules
     let budgets = budgets_with_cats
         .into_iter()
         .map(|(bud, acc)| {
@@ -71,6 +73,7 @@ pub async fn delete_budget(
     Path(budget_id): Path<i32>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> impl IntoResponse {
+    // TODO: Move into database modules
     match budget::Entity::delete_by_id(budget_id).exec(&db).await {
         Ok(_) => axum::http::StatusCode::NO_CONTENT,
         Err(err) => {
@@ -85,6 +88,7 @@ pub async fn edit_budget(
     Extension(db): Extension<DatabaseConnection>,
     Form(form): Form<BudgetForm>,
 ) -> impl IntoResponse {
+    // TODO: Move into database modules
     let mut budget: budget::ActiveModel = budget::Entity::find_by_id(budget_id)
         .one(&db)
         .await

@@ -1,15 +1,17 @@
 use askama::Template;
 use axum::{extract::Path, http::StatusCode, response::Redirect, Extension, Form};
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, DatabaseConnection, EntityTrait, ModelTrait};
+use sea_orm::DatabaseConnection;
 
-use crate::database::entities::{account, budget};
+use crate::database::{
+    accounts, budgets,
+    entities::{account, budget},
+};
 
 #[derive(Template)]
 #[template(path = "account_budgets.html")]
 struct BudgetsTemplate<'a> {
     account: account::Model,
     budgets: Vec<budget::Model>,
-    // categories: Vec<category::Model>,
     menu: &'a str,
     sub_menu: &'a str,
 }
@@ -24,35 +26,21 @@ pub async fn get_account_budgets_handler(
     Path(account_id): Path<i32>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> Result<impl axum::response::IntoResponse, axum::http::StatusCode> {
-    let account_data = account::Entity::find_by_id(account_id)
-        .one(&db)
+    let account_data = accounts::get_account(&db, account_id).await.map_err(|e| {
+        eprintln!("DB error get_account_by_id: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    let budgets = budgets::get_budgets_for_account(&db, account_id)
         .await
         .map_err(|e| {
-            eprintln!("Errore nel recupero account: {:?}", e);
+            eprintln!("DB error get_budgets_for_account: {:?}", e);
             StatusCode::INTERNAL_SERVER_ERROR
-        })?
-        .ok_or(StatusCode::NOT_FOUND)?;
-
-    let budgets = match account_data.find_related(budget::Entity).all(&db).await {
-        Ok(txs) => txs,
-        Err(e) => {
-            println!("Errore find_related: {:?}", e);
-            return Err(axum::http::StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
-
-    // let categories = match category::Entity::find().all(&db).await {
-    //     Ok(cats) => cats,
-    //     Err(e) => {
-    //         println!("Errore find categories: {:?}", e);
-    //         return Err(axum::http::StatusCode::INTERNAL_SERVER_ERROR);
-    //     }
-    // };
+        })?;
 
     let html = BudgetsTemplate {
         account: account_data,
         budgets,
-        // categories,
         menu: "accounts",
         sub_menu: "budgets",
     };
@@ -64,17 +52,8 @@ pub async fn add_budget_handler(
     Extension(db): Extension<DatabaseConnection>,
     Form(form): Form<AddBudgetForm>,
 ) -> Result<Redirect, axum::http::StatusCode> {
-    let new_budget = budget::ActiveModel {
-        name: Set(form.name),
-        value: Set(form.value),
-        account_id: Set(account_id),
-        ..Default::default()
-    };
-
-    new_budget.insert(&db).await.map_err(|e| {
-        eprintln!("Errore inserimento budget: {:?}", e);
-        axum::http::StatusCode::BAD_REQUEST
-    })?;
-
-    Ok(Redirect::to(&format!("/accounts/{}/budgets", account_id)))
+    match budgets::create_budget(&db, account_id, form.name, form.value).await {
+        Ok(_) => Ok(Redirect::to(&format!("/accounts/{}/budgets", account_id))),
+        Err(_) => Err(axum::http::StatusCode::BAD_REQUEST),
+    }
 }

@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
 use crate::database::{
-    category,
+    accounts, categories, category,
     entities::{account, account_rule, rule},
-    transaction,
+    rules, transaction,
 };
 use axum::{
     extract::{Extension, Path},
@@ -72,20 +72,17 @@ pub async fn get_account_rules_handler(
     Path(account_id): Path<i32>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> Result<Html<String>, StatusCode> {
-    let account_data = account::Entity::find_by_id(account_id)
-        .one(&db)
-        .await
-        .map_err(|e| {
-            eprintln!("Errore nel recupero account: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?
-        .ok_or(StatusCode::NOT_FOUND)?;
-
-    let all_rules: Vec<rule::Model> = rule::Entity::find().all(&db).await.map_err(|e| {
-        eprintln!("Errore nel recupero di tutte le regole: {:?}", e);
+    let account_data = accounts::get_account(&db, account_id).await.map_err(|e| {
+        eprintln!("Error retrieving account data: {:?}", e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
+    let all_rules = rules::get_rules(&db).await.map_err(|e| {
+        eprintln!("Error retrieving rules data: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    // TODO: Move into database modules
     let active_rule_ids: HashSet<i32> = account_rule::Entity::find()
         .filter(account_rule::Column::AccountId.eq(account_id))
         .all(&db)
@@ -109,11 +106,12 @@ pub async fn get_account_rules_handler(
         })
         .collect();
 
-    let categories = category::Entity::find()
-        .all(&db)
-        .await
-        .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?;
+    let categories = categories::get_categories(&db).await.map_err(|e| {
+        eprintln!("Error retrieving categories data: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
+    // TODO: Move into database modules
     let uncategorized_transactions = transaction::Entity::find()
         .filter(transaction::Column::AccountId.eq(account_id))
         .filter(transaction::Column::CategoryId.is_null())
@@ -140,6 +138,7 @@ pub async fn activate_rule_handler(
     Path((account_id, rule_id)): Path<(i32, i32)>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> Result<StatusCode, StatusCode> {
+    // TODO: Move into database modules
     account_rule::ActiveModel {
         account_id: Set(account_id),
         rule_id: Set(rule_id),
@@ -155,6 +154,7 @@ pub async fn deactivate_rule_handler(
     Path((account_id, rule_id)): Path<(i32, i32)>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> Result<StatusCode, StatusCode> {
+    // TODO: Move into database modules
     account_rule::Entity::delete_many()
         .filter(account_rule::Column::AccountId.eq(account_id))
         .filter(account_rule::Column::RuleId.eq(rule_id))
@@ -197,6 +197,7 @@ pub async fn add_account_rule_handler(
         ..Default::default()
     };
 
+    // TODO: Move into database modules
     let inserted_rule = new_rule.insert(&db).await.map_err(|e| {
         eprintln!("Error inserting rule: {:?}", e);
         axum::http::StatusCode::BAD_REQUEST
@@ -257,6 +258,7 @@ pub async fn preview_apply_rules(
 ) -> Json<Vec<PreviewTransaction>> {
     let mut previews: Vec<PreviewTransaction> = Vec::new();
 
+    // TODO: Move into database modules
     let uncategorized_transactions = transaction::Entity::find()
         .filter(transaction::Column::AccountId.eq(account_id))
         .filter(transaction::Column::CategoryId.is_null())
@@ -264,12 +266,14 @@ pub async fn preview_apply_rules(
         .await
         .expect("Error reading uncategorized transactions!");
 
+    // TODO: Move into database modules
     let active_rules_raw = account::Entity::find_by_id(account_id)
         .find_with_related(rule::Entity)
         .all(&db)
         .await
         .expect("Error reading active rules");
 
+    // TODO: Move into database modules
     let active_rules: Vec<rule::Model> = active_rules_raw
         .into_iter()
         .flat_map(|(_acc, rules)| rules)
@@ -288,6 +292,7 @@ pub async fn preview_apply_rules(
             let the_rule = &applicable_rules[0];
 
             category_old_value = match transaction.category_id {
+                // TODO: Move into database modules
                 Some(cat_id) => category::Entity::find_by_id(cat_id)
                     .one(&db)
                     .await
@@ -297,6 +302,7 @@ pub async fn preview_apply_rules(
                 None => String::new(),
             };
 
+            // TODO: Move into database modules
             category_new_value = category::Entity::find_by_id(the_rule.category_id)
                 .one(&db)
                 .await
@@ -333,6 +339,7 @@ pub async fn apply_rules(
     Path(account_id): Path<i32>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> Result<StatusCode, StatusCode> {
+    // TODO: Move into database modules
     let uncategorized_transactions = transaction::Entity::find()
         .filter(transaction::Column::AccountId.eq(account_id))
         .filter(transaction::Column::CategoryId.is_null())
@@ -340,12 +347,14 @@ pub async fn apply_rules(
         .await
         .expect("Error reading uncategorized transactions!");
 
+    // TODO: Move into database modules
     let active_rules_raw = account::Entity::find_by_id(account_id)
         .find_with_related(rule::Entity)
         .all(&db)
         .await
         .expect("Error reading active rules!");
 
+    // TODO: Move into database modules
     let active_rules: Vec<rule::Model> = active_rules_raw
         .into_iter()
         .flat_map(|(_acc, rules)| rules)
@@ -361,6 +370,7 @@ pub async fn apply_rules(
             the_transaction.perc_to_exclude = Set(the_rule.percentage);
             the_transaction.category_id = Set(Some(the_rule.category_id));
 
+            // TODO: Move into database modules
             the_transaction.update(&db).await.map_err(|err| {
                 eprint!("Cannot update transaction: {}", err);
                 StatusCode::INTERNAL_SERVER_ERROR
@@ -376,18 +386,21 @@ pub async fn resolve_conflicts_rules(
     Extension(db): Extension<DatabaseConnection>,
     Json(payload): Json<Vec<ResolveConflictPayload>>,
 ) -> impl IntoResponse {
+    // TODO: Move into database modules
     let active_rules_raw = account::Entity::find_by_id(account_id)
         .find_with_related(rule::Entity)
         .all(&db)
         .await
         .expect("Error reading active rules!");
 
+    // TODO: Move into database modules
     let active_rules: Vec<rule::Model> = active_rules_raw
         .into_iter()
         .flat_map(|(_acc, rules)| rules)
         .collect();
 
     for item in payload {
+        // TODO: Move into database modules
         let transaction = transaction::Entity::find_by_id(item.transaction_id)
             .all(&db)
             .await
@@ -399,6 +412,7 @@ pub async fn resolve_conflicts_rules(
             return StatusCode::NOT_FOUND;
         }
 
+        // TODO: Move into database modules
         let the_rule: rule::Model = rule::Entity::find_by_id(item.rule_id)
             .all(&db)
             .await
@@ -410,6 +424,7 @@ pub async fn resolve_conflicts_rules(
         the_transaction.perc_to_exclude = Set(the_rule.percentage);
         the_transaction.category_id = Set(Some(the_rule.category_id));
 
+        // TODO: Move into database modules
         let _ = the_transaction.update(&db).await.map_err(|err| {
             eprint!("Cannot update transaction: {}", err);
             StatusCode::INTERNAL_SERVER_ERROR

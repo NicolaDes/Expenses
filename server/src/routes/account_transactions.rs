@@ -62,6 +62,7 @@ pub async fn get_account_transactions_handler(
     Path(account_id): Path<i32>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> Result<Html<String>, StatusCode> {
+    // TODO: Move into database modules
     let account_data = account::Entity::find_by_id(account_id)
         .one(&db)
         .await
@@ -71,6 +72,7 @@ pub async fn get_account_transactions_handler(
         })?
         .ok_or(StatusCode::NOT_FOUND)?;
 
+    // TODO: Move into database modules
     let txs_with_cats = transaction::Entity::find()
         .filter(transaction::Column::AccountId.eq(account_id))
         .find_with_related(category::Entity)
@@ -81,6 +83,7 @@ pub async fn get_account_transactions_handler(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
+    // TODO: Move into database modules
     let transactions: Vec<TransactionWithCategory> = txs_with_cats
         .into_iter()
         .map(|(txt, cats)| {
@@ -94,6 +97,7 @@ pub async fn get_account_transactions_handler(
         })
         .collect();
 
+    // TODO: Move into database modules
     let categories = match category::Entity::find().all(&db).await {
         Ok(cats) => cats,
         Err(e) => {
@@ -132,6 +136,7 @@ pub async fn add_transaction_handler(
         ..Default::default()
     };
 
+    // TODO: Move into database modules
     if let Err(e) = new_tx.insert(&db).await {
         eprintln!("Errore inserimento transaction: {:?}", e);
         return Err(axum::http::StatusCode::BAD_REQUEST);

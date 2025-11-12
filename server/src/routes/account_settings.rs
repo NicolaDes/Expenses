@@ -46,6 +46,7 @@ pub async fn get_account_setting_handler(
     Path(account_id): Path<i32>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> Result<impl axum::response::IntoResponse, axum::http::StatusCode> {
+    // TODO: Move into database modules
     let account_data = account::Entity::find_by_id(account_id)
         .one(&db)
         .await
@@ -55,6 +56,7 @@ pub async fn get_account_setting_handler(
         })?
         .ok_or(StatusCode::NOT_FOUND)?;
 
+    // TODO: Move into database modules
     let settings: settings::Model = match account_data.find_related(settings::Entity).one(&db).await
     {
         Ok(Some(s)) => s,
@@ -86,6 +88,7 @@ pub async fn get_account_setting_handler(
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
+    // TODO: Move into database modules
     let excluded_categories = settings
         .find_related(category::Entity)
         .all(&db)
@@ -115,6 +118,7 @@ pub async fn update_setting_handler(
     Extension(db): Extension<DatabaseConnection>,
     Form(form): Form<UpdateSettingForm>,
 ) -> Result<Redirect, axum::http::StatusCode> {
+    // TODO: Move into database modules
     let settings: settings::Model = settings::Entity::find()
         .filter(settings::Column::AccountId.eq(account_id))
         .one(&db)
@@ -132,6 +136,8 @@ pub async fn update_setting_handler(
     the_settings.starter_string = Set(form.starter_string);
     the_settings.report_delimiter = Set(form.report_delimiter);
     the_settings.report_decimal_separator = Set(form.report_decimal_separator);
+
+    // TODO: Move into database modules
     the_settings.update(&db).await.map_err(|err| {
         println!("Cannot update settings: {}", err);
         StatusCode::INTERNAL_SERVER_ERROR
@@ -145,6 +151,7 @@ pub async fn add_excluded_category_handler(
     Extension(db): Extension<DatabaseConnection>,
     Form(form): Form<AddExcludedCategoryForm>,
 ) -> Result<Redirect, axum::http::StatusCode> {
+    // TODO: Move into database modules
     let settings: settings::Model = settings::Entity::find()
         .filter(settings::Column::AccountId.eq(account_id))
         .one(&db)
@@ -161,6 +168,7 @@ pub async fn add_excluded_category_handler(
         ..Default::default()
     };
 
+    // TODO: Move into database modules
     if let Err(e) = the_settings_excluded_category.insert(&db).await {
         eprintln!("Error inserting the excluded category in settings: {:?}", e);
         return Err(axum::http::StatusCode::BAD_REQUEST);
@@ -173,6 +181,7 @@ pub async fn delete_excluded_category_handler(
     Path((account_id, category_id)): Path<(i32, i32)>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> impl IntoResponse {
+    // TODO: Move into database modules
     let settings: settings::Model = settings::Entity::find()
         .filter(settings::Column::AccountId.eq(account_id))
         .one(&db)
@@ -181,6 +190,7 @@ pub async fn delete_excluded_category_handler(
         .unwrap()
         .into();
 
+    // TODO: Move into database modules
     let the_settings_excluded_category: settings_excluded_category::Model =
         settings_excluded_category::Entity::find()
             .filter(settings_excluded_category::Column::SettingsId.eq(settings.id))
@@ -191,6 +201,7 @@ pub async fn delete_excluded_category_handler(
             .unwrap()
             .into();
 
+    // TODO: Move into database modules
     match settings_excluded_category::Entity::delete_by_id(the_settings_excluded_category.id)
         .exec(&db)
         .await

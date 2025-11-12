@@ -1,7 +1,7 @@
 use crate::{
     database::{
-        account::{self, Model as AccountModel},
-        budget, category, settings,
+        account::Model as AccountModel,
+        accounts, budgets, category, settingss,
         transaction::{self},
     },
     routes::{common::DateRange, report::get_splittable_expenses_report},
@@ -15,8 +15,8 @@ use axum::{
 };
 use chrono::{Datelike, Duration, NaiveDate, Utc};
 use sea_orm::{
-    ColumnTrait, DatabaseConnection, EntityTrait, ModelTrait, PaginatorTrait, QueryFilter,
-    QueryOrder, QuerySelect,
+    ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
+    QuerySelect,
 };
 use serde::Serialize;
 
@@ -84,52 +84,29 @@ pub async fn get_account_detail(
     Path(account_id): Path<i32>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> Result<Html<String>, StatusCode> {
-    let settings = settings::Entity::find()
-        .filter(settings::Column::AccountId.eq(account_id))
-        .one(&db)
+    let excluded_categories = settingss::get_excluded_categories_for_account(&db, account_id)
         .await
-        .map_err(|e| {
-            eprintln!("Cannot query settings: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?
-        .ok_or(StatusCode::NOT_FOUND)?;
-
-    let excluded_categories = settings
-        .find_related(category::Entity)
-        .all(&db)
-        .await
-        .map_err(|e| {
-            eprintln!(
-                "Error retrievieng excluded categories from settings: {:?}",
-                e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+        .expect("Error retrievieng excluded categories from settings");
 
     let unused_category_ids: Vec<i32> = excluded_categories.iter().map(|cat| cat.id).collect();
 
-    let account_model = account::Entity::find_by_id(account_id)
-        .one(&db)
-        .await
-        .expect("Errore DB")
-        .expect("Account non trovato");
+    let account_model = accounts::get_account(&db, account_id).await.unwrap();
 
     let today = Utc::now().date_naive();
     let first_of_month = NaiveDate::from_ymd_opt(today.year(), today.month(), 1).unwrap();
     let last_day_prev_month = first_of_month - Duration::days(1);
     let start_of_year = NaiveDate::from_ymd_opt(today.year(), 1, 1).unwrap();
 
-    let budget_models = budget::Entity::find()
-        .filter(budget::Column::AccountId.eq(account_id))
-        .all(&db)
+    let budgets_model = budgets::get_budgets_for_account(&db, account_id)
         .await
         .unwrap();
 
     let mut budgets: Vec<BudgetsTemplate> = vec![];
 
-    for budget_model in budget_models {
+    for budget_model in budgets_model {
         let mut sum = 0.0;
 
+        // TODO: Move into database modules
         let category_option = category::Entity::find()
             .filter(category::Column::Category.eq(budget_model.name.clone()))
             .one(&db)
@@ -137,6 +114,7 @@ pub async fn get_account_detail(
             .unwrap();
 
         if let Some(category_model) = category_option {
+            // TODO: Move into database modules
             let transactions = transaction::Entity::find()
                 .filter(transaction::Column::AccountId.eq(account_id))
                 .filter(transaction::Column::Date.gt(start_of_year))
@@ -162,12 +140,14 @@ pub async fn get_account_detail(
         });
     }
 
+    // TODO: Move into database modules
     let categories = category::Entity::find()
         .filter(category::Column::Id.is_not_in(unused_category_ids))
         .all(&db)
         .await
         .expect("Errore DB");
 
+    // TODO: Move into database modules
     let tags = transaction::Entity::find()
         .filter(transaction::Column::AccountId.eq(account_id))
         .filter(transaction::Column::Date.gt(start_of_year))
@@ -203,16 +183,7 @@ pub async fn get_expenses_report(
     Query(range): Query<DateRange>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> impl IntoResponse {
-    let settings = settings::Entity::find()
-        .filter(settings::Column::AccountId.eq(account_id))
-        .one(&db)
-        .await
-        .expect("Cannot query settings")
-        .unwrap();
-
-    let excluded_categories = settings
-        .find_related(category::Entity)
-        .all(&db)
+    let excluded_categories = settingss::get_excluded_categories_for_account(&db, account_id)
         .await
         .expect("Error retrievieng excluded categories from settings");
 
@@ -245,27 +216,9 @@ pub async fn get_chart_data(
     Query(range): Query<DateRange>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> Result<Json<ChartData>, StatusCode> {
-    let settings = settings::Entity::find()
-        .filter(settings::Column::AccountId.eq(account_id))
-        .one(&db)
+    let excluded_categories = settingss::get_excluded_categories_for_account(&db, account_id)
         .await
-        .map_err(|e| {
-            eprintln!("Cannot query settings: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?
-        .ok_or(StatusCode::NOT_FOUND)?;
-
-    let excluded_categories = settings
-        .find_related(category::Entity)
-        .all(&db)
-        .await
-        .map_err(|e| {
-            eprintln!(
-                "Error retrievieng excluded categories from settings: {:?}",
-                e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+        .expect("Error retrievieng excluded categories from settings");
 
     let unused_category_ids: Vec<i32> = excluded_categories.iter().map(|cat| cat.id).collect();
 
@@ -287,6 +240,7 @@ pub async fn get_chart_data(
     let end_date = chrono::NaiveDate::parse_from_str(&range.end, "%Y-%m-%d")
         .map_err(|_| StatusCode::BAD_REQUEST)?;
 
+    // TODO: Move into database modules
     let transactions_count = transaction::Entity::find()
         .filter(transaction::Column::AccountId.eq(account_id))
         .filter(transaction::Column::Date.between(start_date, end_date))
@@ -294,6 +248,7 @@ pub async fn get_chart_data(
         .await
         .unwrap() as i32;
 
+    // TODO: Move into database modules
     let transactions = transaction::Entity::find()
         .filter(transaction::Column::AccountId.eq(account_id))
         .filter(transaction::Column::CategoryId.is_not_in(unused_category_ids))
@@ -473,6 +428,7 @@ pub async fn get_category_analysis_report(
     let end_date = chrono::NaiveDate::parse_from_str(&range.end, "%Y-%m-%d")
         .map_err(|_| StatusCode::BAD_REQUEST)?;
 
+    // TODO: Move into database modules
     let transactions = transaction::Entity::find()
         .filter(transaction::Column::AccountId.eq(account_id))
         .filter(transaction::Column::CategoryId.eq(category_id))
@@ -520,6 +476,7 @@ pub async fn get_tag_analysis_report(
     let end_date = chrono::NaiveDate::parse_from_str(&range.end, "%Y-%m-%d")
         .map_err(|_| StatusCode::BAD_REQUEST)?;
 
+    // TODO: Move into database modules
     let transactions = transaction::Entity::find()
         .filter(transaction::Column::AccountId.eq(account_id))
         .filter(transaction::Column::Label.eq(tag))

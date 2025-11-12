@@ -1,14 +1,13 @@
 use askama::Template;
 use axum::{
     extract::Path,
-    http::StatusCode,
     response::{IntoResponse, Redirect},
     Extension, Form,
 };
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, DatabaseConnection, EntityTrait};
+use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 
-use crate::database::entities::category;
+use crate::database::{categories, entities::category};
 
 #[derive(Template)]
 #[template(path = "categories.html")]
@@ -34,10 +33,9 @@ pub struct CategoryForm {
 pub async fn get_categories_handler(
     Extension(db): Extension<DatabaseConnection>,
 ) -> Result<impl axum::response::IntoResponse, axum::http::StatusCode> {
-    let categories = match category::Entity::find().all(&db).await {
+    let categories = match categories::get_categories(&db).await {
         Ok(cats) => cats,
-        Err(e) => {
-            println!("Errore find categories: {:?}", e);
+        Err(_) => {
             return Err(axum::http::StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
@@ -52,30 +50,30 @@ pub async fn add_category_handler(
     Extension(db): Extension<DatabaseConnection>,
     Form(form): Form<AddCategoryForm>,
 ) -> Result<Redirect, axum::http::StatusCode> {
-    let new_category = category::ActiveModel {
-        transaction_type: Set(form.transaction_type),
-        macro_category: Set(form.macro_category),
-        category: Set(form.category),
-        ..Default::default()
-    };
-
-    if let Err(e) = new_category.insert(&db).await {
-        eprintln!("Errore inserimento category: {:?}", e);
-        return Err(axum::http::StatusCode::BAD_REQUEST);
+    match categories::create_category(
+        &db,
+        form.category,
+        form.macro_category,
+        form.transaction_type,
+    )
+    .await
+    {
+        Ok(_) => Ok(Redirect::to(&format!("/categories",))),
+        Err(_) => Err(axum::http::StatusCode::BAD_REQUEST),
     }
-    Ok(Redirect::to(&format!("/categories",)))
 }
 
 pub async fn delete_category(
     Path(category_id): Path<i32>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> impl IntoResponse {
-    match category::Entity::delete_by_id(category_id).exec(&db).await {
-        Ok(_) => axum::http::StatusCode::NO_CONTENT,
-        Err(err) => {
-            eprintln!("Errore eliminando transazione {}: {}", category_id, err);
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR
-        }
+    match categories::delete_category(&db, category_id).await {
+        Ok(_) => (axum::http::StatusCode::NO_CONTENT).into_response(),
+        Err(err) => (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            err.to_string(),
+        )
+            .into_response(),
     }
 }
 
@@ -84,21 +82,20 @@ pub async fn edit_category(
     Extension(db): Extension<DatabaseConnection>,
     Form(form): Form<CategoryForm>,
 ) -> impl IntoResponse {
-    let mut category: category::ActiveModel = category::Entity::find_by_id(category_id)
-        .one(&db)
-        .await
-        .expect("Error reading the category!")
-        .unwrap()
-        .into();
-
-    category.transaction_type = Set(form.transaction_type);
-    category.macro_category = Set(form.macro_category);
-    category.category = Set(form.category);
-
-    let _ = category.update(&db).await.map_err(|err| {
-        eprintln!("Cannot update category: {}", err);
-        return StatusCode::INTERNAL_SERVER_ERROR;
-    });
-
-    return StatusCode::OK;
+    match categories::edit_category(
+        &db,
+        category_id,
+        form.category,
+        form.macro_category,
+        form.transaction_type,
+    )
+    .await
+    {
+        Ok(_) => (axum::http::StatusCode::OK).into_response(),
+        Err(err) => (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            err.to_string(),
+        )
+            .into_response(),
+    }
 }
