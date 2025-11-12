@@ -221,7 +221,8 @@
             {% for budget in budgets %}
             <div class="stat-card card-span-4 card-row-span-1">
                 <div class="progress-container" style="margin-bottom: 20px;">
-                    <span class="card-header progress-label">{{budget.label}} for {{budget.year}}</span>
+                    <span class="card-header progress-label">{{budget.label}} for {{budget.year}} | remaining: {{
+                        "{:.2}" | format(budget.limit - budget.value) }} €</span>
                     <div class="card-body progress-bar">
                         {% if budget.percentage < 85 %} <div class="progress-fill success"
                             style="width: {{budget.percentage}}%">
@@ -234,8 +235,8 @@
                 {% endif %}
             </div>
             <div style="display: flex; justify-content: space-between; margin-top: 8px;">
-                <span class="progress-value">{{budget.value}}€</span>
-                <span style="font-size: 14px; color: var(--color-label);">of {{budget.limit}}€</span>
+                <span class="progress-value">{{"{:.2}" | format(budget.value)}} €</span>
+                <span style="font-size: 14px; color: var(--color-label);">of {{budget.limit}} €</span>
             </div>
             {% if budget.percentage < 85 %} <span class="status-badge success">Healty</span>
                 {% elif budget.percentage <= 100 %} <span class="status-badge warning">Watch Out</span>

@@ -24,3 +24,5 @@ target
 
 # Database
 .database-data/
+
+.vscode/

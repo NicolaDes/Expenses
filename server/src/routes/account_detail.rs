@@ -107,28 +107,27 @@ pub async fn get_account_detail(
         let mut sum = 0.0;
 
         // TODO: Move into database modules
-        let category_option = category::Entity::find()
+        let category_models = category::Entity::find()
             .filter(category::Column::Category.eq(budget_model.name.clone()))
-            .one(&db)
+            .all(&db)
             .await
             .unwrap();
 
-        if let Some(category_model) = category_option {
-            // TODO: Move into database modules
-            let transactions = transaction::Entity::find()
-                .filter(transaction::Column::AccountId.eq(account_id))
-                .filter(transaction::Column::Date.gt(start_of_year))
-                .filter(transaction::Column::CategoryId.eq(category_model.id))
-                .all(&db)
-                .await
-                .unwrap();
+        let category_ids: Vec<i32> = category_models.iter().map(|model| model.id).collect();
 
-            for transaction in transactions {
-                sum = sum
-                    + (transaction.value
-                        - (transaction.value * transaction.perc_to_exclude as f64))
-                        .abs();
-            }
+        // TODO: Move into database modules
+        let transactions = transaction::Entity::find()
+            .filter(transaction::Column::AccountId.eq(account_id))
+            .filter(transaction::Column::Date.gt(start_of_year))
+            .filter(transaction::Column::CategoryId.is_in(category_ids))
+            .all(&db)
+            .await
+            .unwrap();
+
+        for transaction in transactions {
+            sum = sum
+                + (transaction.value - (transaction.value * transaction.perc_to_exclude as f64))
+                    .abs();
         }
 
         budgets.push(BudgetsTemplate {
