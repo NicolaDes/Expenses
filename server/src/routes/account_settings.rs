@@ -67,6 +67,8 @@ pub async fn get_account_setting_handler(
                 description_index: Set(0),
                 value_index: Set(0),
                 starter_string: Set("".to_string()),
+                report_delimiter: Set(";".to_string()),
+                report_decimal_separator: Set(",".to_string()),
                 ..Default::default()
             };
 

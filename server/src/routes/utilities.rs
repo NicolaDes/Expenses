@@ -6,7 +6,8 @@ use axum::{
     Extension,
 };
 use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ConnectionTrait, DatabaseConnection, EntityTrait, Statement,
+    ActiveModelTrait, ActiveValue::Set, ConnectionTrait, DatabaseConnection, EntityTrait,
+    Statement, TransactionTrait,
 };
 use serde::Serialize;
 use serde_json::from_slice;
@@ -116,182 +117,206 @@ pub async fn restore_full_backup(
         return (StatusCode::BAD_REQUEST, "Nessun file caricato").into_response();
     };
 
-    if let Err(err) = account::Entity::delete_many().exec(&db).await {
-        eprintln!("Errore cancellando accounts: {:?}", err);
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Errore eliminando transazioni",
-        )
-            .into_response();
+    let txn = match db.begin().await {
+        Ok(t) => t,
+        Err(err) => {
+            eprintln!("Errore avviando transazione: {:?}", err);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Errore avviando transazione",
+            )
+                .into_response();
+        }
+    };
+
+    macro_rules! rollback_on_err {
+        ($result:expr, $msg:expr) => {
+            match $result {
+                Ok(v) => v,
+                Err(err) => {
+                    eprintln!("{}: {:?}", $msg, err);
+                    if let Err(rb_err) = txn.rollback().await {
+                        eprintln!("Rollback failed after error: {:?}", rb_err);
+                    }
+                    return (StatusCode::INTERNAL_SERVER_ERROR, $msg).into_response();
+                }
+            }
+        };
     }
 
-    if let Err(err) = category::Entity::delete_many().exec(&db).await {
-        eprintln!("Errore cancellando categories: {:?}", err);
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Errore eliminando categorie",
-        )
-            .into_response();
-    }
-
-    if let Err(err) = transaction::Entity::delete_many().exec(&db).await {
-        eprintln!("Errore cancellando transazioni: {:?}", err);
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Errore eliminando transazioni",
-        )
-            .into_response();
-    }
-
-    if let Err(err) = budget::Entity::delete_many().exec(&db).await {
-        eprintln!("Errore cancellando budgets: {:?}", err);
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Errore eliminando budgets",
-        )
-            .into_response();
-    }
-
-    if let Err(err) = account_rule::Entity::delete_many().exec(&db).await {
-        eprintln!("Errore cancellando account_rules: {:?}", err);
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Errore eliminando account_rules",
-        )
-            .into_response();
-    }
-
-    if let Err(err) = rule::Entity::delete_many().exec(&db).await {
-        eprintln!("Errore cancellando rules: {:?}", err);
-        return (StatusCode::INTERNAL_SERVER_ERROR, "Errore eliminando rules").into_response();
-    }
-
-    if let Err(err) = settings::Entity::delete_many().exec(&db).await {
-        eprintln!("Errore cancellando settings: {:?}", err);
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Errore eliminando settings",
-        )
-            .into_response();
-    }
-
-    if let Err(err) = settings_excluded_category::Entity::delete_many()
-        .exec(&db)
-        .await
-    {
-        eprintln!("Error cancelling exlcuded categories: {:?}", err);
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Error deleting exlcuded categories",
-        )
-            .into_response();
-    }
+    rollback_on_err!(
+        account::Entity::delete_many().exec(&txn).await,
+        "Errore eliminando accounts"
+    );
+    rollback_on_err!(
+        category::Entity::delete_many().exec(&txn).await,
+        "Errore eliminando categorie"
+    );
+    rollback_on_err!(
+        transaction::Entity::delete_many().exec(&txn).await,
+        "Errore eliminando transazioni"
+    );
+    rollback_on_err!(
+        budget::Entity::delete_many().exec(&txn).await,
+        "Errore eliminando budgets"
+    );
+    rollback_on_err!(
+        account_rule::Entity::delete_many().exec(&txn).await,
+        "Errore eliminando account_rules"
+    );
+    rollback_on_err!(
+        rule::Entity::delete_many().exec(&txn).await,
+        "Errore eliminando rules"
+    );
+    rollback_on_err!(
+        settings::Entity::delete_many().exec(&txn).await,
+        "Errore eliminando settings"
+    );
+    rollback_on_err!(
+        settings_excluded_category::Entity::delete_many()
+            .exec(&txn)
+            .await,
+        "Errore eliminando excluded categories"
+    );
 
     for a in backup.accounts {
-        let _ = account::ActiveModel {
-            id: Set(a.id),
-            name: Set(a.name),
-        }
-        .insert(&db)
-        .await;
+        rollback_on_err!(
+            account::ActiveModel {
+                id: Set(a.id),
+                name: Set(a.name),
+            }
+            .insert(&txn)
+            .await,
+            "Errore inserendo account"
+        );
         summary.accounts += 1;
     }
 
     for c in backup.categories {
-        let _ = category::ActiveModel {
-            id: Set(c.id),
-            transaction_type: Set(c.transaction_type),
-            macro_category: Set(c.macro_category),
-            category: Set(c.category),
-        }
-        .insert(&db)
-        .await;
+        rollback_on_err!(
+            category::ActiveModel {
+                id: Set(c.id),
+                transaction_type: Set(c.transaction_type),
+                macro_category: Set(c.macro_category),
+                category: Set(c.category),
+            }
+            .insert(&txn)
+            .await,
+            "Errore inserendo categoria"
+        );
         summary.categories += 1;
     }
 
     for t in backup.transactions {
-        let _ = transaction::ActiveModel {
-            id: Set(t.id),
-            account_id: Set(t.account_id),
-            category_id: Set(t.category_id),
-            value: Set(t.value),
-            description: Set(t.description),
-            date: Set(t.date.naive_utc()),
-            perc_to_exclude: Set(t.perc_to_exclude),
-            label: Set(t.label),
-        }
-        .insert(&db)
-        .await;
+        rollback_on_err!(
+            transaction::ActiveModel {
+                id: Set(t.id),
+                account_id: Set(t.account_id),
+                category_id: Set(t.category_id),
+                value: Set(t.value),
+                description: Set(t.description),
+                date: Set(t.date.naive_utc()),
+                perc_to_exclude: Set(t.perc_to_exclude),
+                label: Set(t.label),
+            }
+            .insert(&txn)
+            .await,
+            "Errore inserendo transazione"
+        );
         summary.transactions += 1;
     }
 
     for b in backup.budgets {
-        let _ = budget::ActiveModel {
-            id: Set(b.id),
-            account_id: Set(b.account_id),
-            name: Set(b.name),
-            value: Set(b.value),
-        }
-        .insert(&db)
-        .await;
+        rollback_on_err!(
+            budget::ActiveModel {
+                id: Set(b.id),
+                account_id: Set(b.account_id),
+                name: Set(b.name),
+                value: Set(b.value),
+            }
+            .insert(&txn)
+            .await,
+            "Errore inserendo budget"
+        );
         summary.budgets += 1;
     }
 
     for r in backup.rules {
-        let _ = rule::ActiveModel {
-            id: Set(r.id),
-            name: Set(r.name),
-            label: Set(r.label),
-            percentage: Set(r.percentage),
-            category_id: Set(r.category_id),
-            regexpr: Set(r.regexpr),
-            date_start: Set(r.date_start),
-            date_end: Set(r.date_end),
-        }
-        .insert(&db)
-        .await;
+        rollback_on_err!(
+            rule::ActiveModel {
+                id: Set(r.id),
+                name: Set(r.name),
+                label: Set(r.label),
+                percentage: Set(r.percentage),
+                category_id: Set(r.category_id),
+                regexpr: Set(r.regexpr),
+                date_start: Set(r.date_start),
+                date_end: Set(r.date_end),
+            }
+            .insert(&txn)
+            .await,
+            "Errore inserendo rule"
+        );
         summary.rules += 1;
     }
 
     for ar in backup.account_rules {
-        let _ = account_rule::ActiveModel {
-            id: Set(ar.id),
-            account_id: Set(ar.account_id),
-            rule_id: Set(ar.rule_id),
-        }
-        .insert(&db)
-        .await;
+        rollback_on_err!(
+            account_rule::ActiveModel {
+                id: Set(ar.id),
+                account_id: Set(ar.account_id),
+                rule_id: Set(ar.rule_id),
+            }
+            .insert(&txn)
+            .await,
+            "Errore inserendo account_rule"
+        );
         summary.account_rules += 1;
     }
 
-    for settings in backup.settings {
-        let _ = settings::ActiveModel {
-            id: Set(settings.id),
-            account_id: Set(settings.account_id),
-            date_index: Set(settings.date_index),
-            description_index: Set(settings.description_index),
-            value_index: Set(settings.value_index),
-            starter_string: Set(settings.starter_string),
-            report_delimiter: Set(settings.report_delimiter),
-            report_decimal_separator: Set(settings.report_decimal_separator),
-        }
-        .insert(&db)
-        .await;
+    for s in backup.settings {
+        rollback_on_err!(
+            settings::ActiveModel {
+                id: Set(s.id),
+                account_id: Set(s.account_id),
+                date_index: Set(s.date_index),
+                description_index: Set(s.description_index),
+                value_index: Set(s.value_index),
+                starter_string: Set(s.starter_string),
+                report_delimiter: Set(s.report_delimiter),
+                report_decimal_separator: Set(s.report_decimal_separator),
+            }
+            .insert(&txn)
+            .await,
+            "Errore inserendo settings"
+        );
         summary.settings += 1;
     }
 
-    for excluded_categories in backup.exlcuded_categories {
-        let _ = settings_excluded_category::ActiveModel {
-            id: Set(excluded_categories.id),
-            settings_id: Set(excluded_categories.settings_id),
-            category_id: Set(excluded_categories.category_id),
-        }
-        .insert(&db)
-        .await;
+    for ec in backup.exlcuded_categories {
+        rollback_on_err!(
+            settings_excluded_category::ActiveModel {
+                id: Set(ec.id),
+                settings_id: Set(ec.settings_id),
+                category_id: Set(ec.category_id),
+            }
+            .insert(&txn)
+            .await,
+            "Errore inserendo excluded category"
+        );
         summary.excluded_categories += 1;
     }
 
-    // Reset last_value in postgresql
+    if let Err(err) = txn.commit().await {
+        eprintln!("Errore committando transazione: {:?}", err);
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Errore committando il ripristino",
+        )
+            .into_response();
+    }
+
+    // Reset sequences after commit, using the main connection
     let sequences = [
         ("accounts", "accounts_id_seq"),
         ("categories", "categories_id_seq"),

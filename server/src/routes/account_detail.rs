@@ -358,6 +358,62 @@ pub async fn get_chart_data(
         .map(|(x, y)| x + y)
         .collect();
 
+    if montly_labels.is_empty() {
+        return Ok(Json(ChartData {
+            montly_labels,
+            montly_expenses,
+            montly_income,
+            income_categories,
+            income_values,
+            expense_categories_category,
+            expense_values_category,
+            expense_categories_macrocategory,
+            expense_values_macrocategory,
+            income,
+            expenses,
+            net_balance,
+            transactions_count,
+            transactions_count_used,
+            mean_montly_income: 0.0,
+            mean_montly_expenses: 0.0,
+            mean_income_increment: 0.0,
+            mean_income_increment_percentage: 0.0,
+            mean_expenses_increment: 0.0,
+            mean_expenses_increment_percentage: 0.0,
+            mean_montly_net_balance: 0.0,
+            mean_net_balance_increment: 0.0,
+            mean_net_balance_increment_percentage: 0.0,
+        }));
+    }
+
+    if montly_labels.len() == 1 {
+        return Ok(Json(ChartData {
+            montly_labels,
+            montly_expenses,
+            montly_income,
+            income_categories,
+            income_values,
+            expense_categories_category,
+            expense_values_category,
+            expense_categories_macrocategory,
+            expense_values_macrocategory,
+            income,
+            expenses,
+            net_balance,
+            transactions_count,
+            transactions_count_used,
+            mean_montly_income: income,
+            mean_montly_expenses: expenses,
+            mean_income_increment: 0.0,
+            mean_income_increment_percentage: 0.0,
+            mean_expenses_increment: 0.0,
+            mean_expenses_increment_percentage: 0.0,
+            mean_montly_net_balance: net_balance,
+            mean_net_balance_increment: 0.0,
+            mean_net_balance_increment_percentage: 0.0,
+        }));
+    }
+
     let income_except_last_month = montly_income[..montly_income.len() - 1].iter().sum::<f64>();
     let mean_income_increment =
         (income_except_last_month / (months_size - 1 as f64)) - (income / months_size);

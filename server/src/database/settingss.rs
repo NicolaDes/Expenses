@@ -1,5 +1,5 @@
 use crate::database::{category, entities::settings};
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, ModelTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, ModelTrait, QueryFilter};
 
 // pub async fn get_settingss(db: &DatabaseConnection) -> anyhow::Result<Vec<settings::Model>> {
 //     let settingss = settings::Entity::find().all(db).await?;
@@ -10,11 +10,27 @@ pub async fn get_settings_for_account(
     db: &DatabaseConnection,
     account_id: i32,
 ) -> anyhow::Result<settings::Model> {
-    let settings = settings::Entity::find()
+    let settings = match settings::Entity::find()
         .filter(settings::Column::AccountId.eq(account_id))
         .one(db)
         .await?
-        .unwrap();
+    {
+        Some(s) => s,
+        None => {
+            settings::ActiveModel {
+                account_id: Set(account_id),
+                date_index: Set(0),
+                description_index: Set(0),
+                value_index: Set(0),
+                starter_string: Set("".to_string()),
+                report_delimiter: Set(";".to_string()),
+                report_decimal_separator: Set(",".to_string()),
+                ..Default::default()
+            }
+            .insert(db)
+            .await?
+        }
+    };
 
     Ok(settings)
 }
@@ -23,9 +39,8 @@ pub async fn get_excluded_categories_for_account(
     db: &DatabaseConnection,
     account_id: i32,
 ) -> anyhow::Result<Vec<category::Model>> {
-    let categories = get_settings_for_account(&db, account_id)
-        .await
-        .unwrap()
+    let categories = get_settings_for_account(db, account_id)
+        .await?
         .find_related(category::Entity)
         .all(db)
         .await?;

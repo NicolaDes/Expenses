@@ -79,7 +79,7 @@ pub fn account_routers() -> Router {
             get(get_tag_analysis_report),
         )
         .route(
-            "/{accont_id}/settings/exclude_category",
+            "/{account_id}/settings/exclude_category",
             post(add_excluded_category_handler),
         )
         .route(

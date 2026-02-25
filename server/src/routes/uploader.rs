@@ -6,7 +6,6 @@ use axum::{
 };
 use calamine::{Reader, Xls, Xlsx};
 use chrono::{Duration, NaiveDate};
-use csv::ReaderBuilder;
 use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
 };
@@ -33,24 +32,13 @@ fn excel_number_to_date(excel_number: &str) -> Option<NaiveDate> {
 }
 
 async fn process_csv(
-    data: &[u8],
+    _data: &[u8],
     _date_idx: usize,
     _description_idx: usize,
     _value_idx: usize,
     _starter_string: String,
 ) -> anyhow::Result<Vec<TransactionData>> {
-    let transactions = Vec::new();
-
-    let mut rdr = ReaderBuilder::new()
-        .has_headers(false)
-        .from_reader(Cursor::new(data));
-
-    for (_idx, _result) in rdr.records().enumerate() {
-        // let record = result?;
-        todo!();
-    }
-
-    Ok(transactions)
+    anyhow::bail!("CSV import is not yet supported")
 }
 
 async fn process_xlsx(
