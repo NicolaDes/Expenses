@@ -26,3 +26,4 @@ target
 .database-data/
 
 .vscode/
+.todos/
