@@ -38,11 +38,17 @@ struct RestoreSummary {
     excluded_categories: usize,
 }
 
-pub async fn reset_sequence(
+pub(crate) async fn reset_sequence(
     db: &DatabaseConnection,
     table: &str,
     sequence: &str,
 ) -> anyhow::Result<()> {
+    fn is_safe_identifier(s: &str) -> bool {
+        !s.is_empty() && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+    }
+    anyhow::ensure!(is_safe_identifier(table), "unsafe table name: {table:?}");
+    anyhow::ensure!(is_safe_identifier(sequence), "unsafe sequence name: {sequence:?}");
+
     let sql = format!(
         "SELECT setval('{}', (SELECT COALESCE(MAX(id), 0) FROM {}), true);",
         sequence, table

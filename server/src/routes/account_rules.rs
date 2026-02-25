@@ -226,7 +226,13 @@ fn get_applayable_rules(
             let regexprs: Vec<&str> = rule.regexpr.as_deref().unwrap_or("").split(',').collect();
 
             for regexpr in regexprs {
-                let re = Regex::new(regexpr).unwrap();
+                let re = match Regex::new(regexpr) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        eprintln!("Skipping invalid regex {:?}: {}", regexpr, e);
+                        continue;
+                    }
+                };
                 if re.is_match(&transaction.description) {
                     appliers.push(rule.clone());
                     continue 'rules;
@@ -401,11 +407,17 @@ pub async fn resolve_conflicts_rules(
 
     for item in payload {
         // TODO: Move into database modules
-        let transaction = transaction::Entity::find_by_id(item.transaction_id)
-            .all(&db)
+        let transaction = match transaction::Entity::find_by_id(item.transaction_id)
+            .one(&db)
             .await
-            .expect("Error reading transaction!")[0]
-            .clone();
+        {
+            Ok(Some(t)) => t,
+            Ok(None) => return StatusCode::NOT_FOUND,
+            Err(e) => {
+                eprintln!("Error reading transaction {}: {:?}", item.transaction_id, e);
+                return StatusCode::INTERNAL_SERVER_ERROR;
+            }
+        };
         let applicable_rules = get_applayable_rules(transaction.clone(), active_rules.clone());
 
         if applicable_rules.len() <= 1 || !applicable_rules.iter().any(|r| r.id == item.rule_id) {
@@ -413,11 +425,17 @@ pub async fn resolve_conflicts_rules(
         }
 
         // TODO: Move into database modules
-        let the_rule: rule::Model = rule::Entity::find_by_id(item.rule_id)
-            .all(&db)
+        let the_rule: rule::Model = match rule::Entity::find_by_id(item.rule_id)
+            .one(&db)
             .await
-            .expect("Error reading rule!")[0]
-            .clone();
+        {
+            Ok(Some(r)) => r,
+            Ok(None) => return StatusCode::NOT_FOUND,
+            Err(e) => {
+                eprintln!("Error reading rule {}: {:?}", item.rule_id, e);
+                return StatusCode::INTERNAL_SERVER_ERROR;
+            }
+        };
         let mut the_transaction: transaction::ActiveModel = transaction.into();
 
         the_transaction.label = Set(the_rule.label.clone());
@@ -425,10 +443,10 @@ pub async fn resolve_conflicts_rules(
         the_transaction.category_id = Set(Some(the_rule.category_id));
 
         // TODO: Move into database modules
-        let _ = the_transaction.update(&db).await.map_err(|err| {
-            eprint!("Cannot update transaction: {}", err);
-            StatusCode::INTERNAL_SERVER_ERROR
-        });
+        if let Err(err) = the_transaction.update(&db).await {
+            eprintln!("Cannot update transaction: {}", err);
+            return StatusCode::INTERNAL_SERVER_ERROR;
+        }
     }
 
     return StatusCode::OK;

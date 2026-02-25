@@ -66,12 +66,23 @@ async fn process_xlsx(
                 }
             }
 
-            let date = excel_number_to_date(&values[date_idx]).unwrap();
-            let description = values[description_idx].clone();
-            let value: f64 = values[value_idx]
+            let raw_date = values
+                .get(date_idx)
+                .ok_or_else(|| anyhow::anyhow!("date column index {} out of range (row has {} cols)", date_idx, values.len()))?;
+            let date = excel_number_to_date(raw_date)
+                .ok_or_else(|| anyhow::anyhow!("cannot parse date value {:?}", raw_date))?;
+
+            let description = values
+                .get(description_idx)
+                .ok_or_else(|| anyhow::anyhow!("description column index {} out of range", description_idx))?
+                .clone();
+
+            let value: f64 = values
+                .get(value_idx)
+                .ok_or_else(|| anyhow::anyhow!("value column index {} out of range", value_idx))?
                 .replace(',', ".")
                 .parse()
-                .expect("Not a Number");
+                .map_err(|_| anyhow::anyhow!("value column is not a valid number"))?;
 
             transactions.push(TransactionData {
                 description: description,
@@ -109,12 +120,23 @@ async fn process_xls(
                 }
             }
 
-            let date = excel_number_to_date(&values[date_idx]).unwrap();
-            let description = values[description_idx].clone();
-            let value: f64 = values[value_idx]
+            let raw_date = values
+                .get(date_idx)
+                .ok_or_else(|| anyhow::anyhow!("date column index {} out of range (row has {} cols)", date_idx, values.len()))?;
+            let date = excel_number_to_date(raw_date)
+                .ok_or_else(|| anyhow::anyhow!("cannot parse date value {:?}", raw_date))?;
+
+            let description = values
+                .get(description_idx)
+                .ok_or_else(|| anyhow::anyhow!("description column index {} out of range", description_idx))?
+                .clone();
+
+            let value: f64 = values
+                .get(value_idx)
+                .ok_or_else(|| anyhow::anyhow!("value column index {} out of range", value_idx))?
                 .replace(',', ".")
                 .parse()
-                .expect("Not a Number");
+                .map_err(|_| anyhow::anyhow!("value column is not a valid number"))?;
 
             transactions.push(TransactionData {
                 description: description,
