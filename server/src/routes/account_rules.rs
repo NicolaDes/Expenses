@@ -224,8 +224,8 @@ fn get_applicable_rules(
             let date_end: Option<NaiveDateTime> =
                 rule.date_end.and_then(|d| d.and_hms_opt(23, 59, 59));
 
-            if (date_start.map_or(true, |start| transaction.date >= start))
-                && (date_end.map_or(true, |end| transaction.date <= end))
+            if (date_start.is_none_or(|start| transaction.date >= start))
+                && (date_end.is_none_or(|end| transaction.date <= end))
             {
                 appliers.push(rule.clone());
             }

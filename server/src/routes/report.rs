@@ -21,7 +21,7 @@ pub async fn get_splittable_expenses_report(
         .await
         .map_err(|e| {
             eprintln!("Cannot query settings: {:?}", e);
-            io::Error::new(io::ErrorKind::Other, "Database error")
+            io::Error::other("Database error")
         })?
         .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Settings not found"))?;
 
@@ -50,9 +50,9 @@ pub async fn get_splittable_expenses_report(
         .order_by_asc(transaction::Column::Date)
         .all(db)
         .await
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("DB error: {e}")))?;
+        .map_err(|e| io::Error::other(format!("DB error: {e}")))?;
 
-    writer.write_record(&["Descrizione", "Speso Netto", "Da Pagare"])?;
+    writer.write_record(["Descrizione", "Speso Netto", "Da Pagare"])?;
 
     for transaction in transactions {
         let value = transaction.value;
@@ -72,7 +72,7 @@ pub async fn get_splittable_expenses_report(
 
     let inner = writer
         .into_inner()
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+        .map_err(io::Error::other)?;
 
     Ok(inner)
 }

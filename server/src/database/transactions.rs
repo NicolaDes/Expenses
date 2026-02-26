@@ -2,10 +2,11 @@ use crate::database::{category, entities::transaction};
 use anyhow::Context;
 use chrono::NaiveDate;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
+    ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
     QueryOrder,
 };
 
+#[allow(clippy::too_many_arguments)]
 pub async fn create_transaction(
     db: &DatabaseConnection,
     account_id: i32,
@@ -48,6 +49,7 @@ pub async fn delete_transaction(db: &DatabaseConnection, id: i32) -> anyhow::Res
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn edit_transaction(
     db: &DatabaseConnection,
     id: i32,
@@ -111,6 +113,7 @@ pub async fn get_uncategorized_transactions_for_account(
     Ok(result)
 }
 
+#[allow(dead_code)]
 pub async fn get_transactions_from_year_start(
     db: &DatabaseConnection,
     account_id: i32,

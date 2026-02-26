@@ -61,7 +61,7 @@ pub async fn add_category_handler(
     )
     .await
     {
-        Ok(_) => Ok(Redirect::to(&format!("/categories",))),
+        Ok(_) => Ok(Redirect::to("/categories")),
         Err(_) => Err(axum::http::StatusCode::BAD_REQUEST),
     }
 }

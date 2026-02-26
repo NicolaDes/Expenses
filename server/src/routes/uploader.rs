@@ -83,9 +83,9 @@ async fn process_xlsx(
                 .map_err(|_| anyhow::anyhow!("value column is not a valid number"))?;
 
             transactions.push(TransactionData {
-                description: description,
-                value: value,
-                date: date,
+                description,
+                value,
+                date,
             });
         }
     }
@@ -137,9 +137,9 @@ async fn process_xls(
                 .map_err(|_| anyhow::anyhow!("value column is not a valid number"))?;
 
             transactions.push(TransactionData {
-                description: description,
-                value: value,
-                date: date,
+                description,
+                value,
+                date,
             });
         }
     }

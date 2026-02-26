@@ -5,7 +5,7 @@ use crate::database::{
 use anyhow::Context;
 use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait,
-    QueryFilter, RelationTrait,
+    QueryFilter,
 };
 use std::collections::HashSet;
 
@@ -25,6 +25,7 @@ pub async fn get_rules_with_categories(
     Ok(rules_with_cats)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn create_rule(
     db: &DatabaseConnection,
     name: String,
@@ -81,6 +82,7 @@ pub async fn delete_rule(db: &DatabaseConnection, id: i32) -> anyhow::Result<()>
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn edit_rule(
     db: &DatabaseConnection,
     id: i32,

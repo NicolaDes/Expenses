@@ -5,7 +5,7 @@ use tokio::net::TcpListener;
 
 mod database;
 mod routes;
-use crate::routes::routes::router;
+use crate::routes::router::router;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

@@ -7,6 +7,7 @@ pub async fn get_categories(db: &DatabaseConnection) -> anyhow::Result<Vec<categ
     Ok(models)
 }
 
+#[allow(dead_code)]
 pub async fn get_categories_excluding(
     db: &DatabaseConnection,
     excluded_ids: Vec<i32>,
@@ -18,6 +19,7 @@ pub async fn get_categories_excluding(
     Ok(models)
 }
 
+#[allow(dead_code)]
 pub async fn get_categories_by_names(
     db: &DatabaseConnection,
     names: Vec<String>,
@@ -29,6 +31,7 @@ pub async fn get_categories_by_names(
     Ok(models)
 }
 
+#[allow(dead_code)]
 pub async fn get_category(
     db: &DatabaseConnection,
     id: i32,

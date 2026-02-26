@@ -1,6 +1,6 @@
 use crate::database::{account, entities::budget};
 use anyhow::Context;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, DatabaseConnection, EntityTrait, ModelTrait};
+use sea_orm::{ActiveValue::Set, DatabaseConnection, EntityTrait, ModelTrait};
 
 pub async fn get_budgets_for_account(
     db: &DatabaseConnection,

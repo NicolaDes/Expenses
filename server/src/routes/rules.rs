@@ -57,7 +57,7 @@ pub async fn get_rules_handler(
                 label: model.label,
                 percentage: model.percentage,
                 category_id: Some(category_id),
-                category_name: category_name,
+                category_name,
                 regexpr: model.regexpr.unwrap_or("".to_string()),
                 date_start: model.date_start.map(|d| d.to_string()).unwrap_or_default(),
                 date_end: model.date_end.map(|d| d.to_string()).unwrap_or_default(),

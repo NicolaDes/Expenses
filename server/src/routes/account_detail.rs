@@ -125,16 +125,15 @@ pub async fn get_account_detail(
             .unwrap();
 
         for transaction in transactions {
-            sum = sum
-                + (transaction.value - (transaction.value * transaction.perc_to_exclude as f64))
-                    .abs();
+            sum += (transaction.value - (transaction.value * transaction.perc_to_exclude as f64))
+                .abs();
         }
 
         budgets.push(BudgetsTemplate {
             label: budget_model.name.clone(),
             value: sum,
             limit: budget_model.value,
-            percentage: ((sum / budget_model.value) * 100.0 as f64) as i32,
+            percentage: ((sum / budget_model.value) * 100.0_f64) as i32,
             year: start_of_year.year(),
         });
     }
@@ -419,32 +418,32 @@ pub async fn get_chart_data(
 
     let income_except_last_month = monthly_income[..monthly_income.len() - 1].iter().sum::<f64>();
     let mean_income_increment =
-        (income_except_last_month / (months_size - 1 as f64)) - (income / months_size);
+        (income_except_last_month / (months_size - 1_f64)) - (income / months_size);
     let mean_income_increment_percentage = (((income / months_size)
-        - (income_except_last_month / (months_size - 1 as f64)))
-        / (income_except_last_month / (months_size - 1 as f64)))
-        * 100 as f64;
+        - (income_except_last_month / (months_size - 1_f64)))
+        / (income_except_last_month / (months_size - 1_f64)))
+        * 100_f64;
 
     let expenses_except_last_month = monthly_expenses[..monthly_expenses.len() - 1]
         .iter()
         .sum::<f64>();
     let mean_expenses_increment =
-        (expenses_except_last_month / (months_size - 1 as f64)) - (expenses / months_size);
+        (expenses_except_last_month / (months_size - 1_f64)) - (expenses / months_size);
     let mean_expenses_increment_percentage = (((expenses / months_size)
-        - (expenses_except_last_month / (months_size - 1 as f64)))
-        / (expenses_except_last_month / (months_size - 1 as f64)))
-        * 100 as f64;
+        - (expenses_except_last_month / (months_size - 1_f64)))
+        / (expenses_except_last_month / (months_size - 1_f64)))
+        * 100_f64;
 
     let net_balance_except_last_month = net_balance_vec[..net_balance_vec.len() - 1]
         .iter()
         .sum::<f64>();
     let mean_monthly_net_balance = net_balance / months_size;
     let mean_net_balance_increment =
-        (net_balance_except_last_month / (months_size - 1 as f64)) - (net_balance / months_size);
+        (net_balance_except_last_month / (months_size - 1_f64)) - (net_balance / months_size);
     let mean_net_balance_increment_percentage = (((net_balance / months_size)
-        - (net_balance_except_last_month / (months_size - 1 as f64)))
-        / (net_balance_except_last_month / (months_size - 1 as f64)))
-        * 100 as f64;
+        - (net_balance_except_last_month / (months_size - 1_f64)))
+        / (net_balance_except_last_month / (months_size - 1_f64)))
+        * 100_f64;
 
     Ok(Json(ChartData {
         monthly_labels,

@@ -49,6 +49,7 @@ pub async fn get_excluded_categories_for_account(
     Ok(categories)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn update_settings(
     db: &DatabaseConnection,
     account_id: i32,
