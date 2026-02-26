@@ -1,4 +1,5 @@
 use axum::{
+    extract::DefaultBodyLimit,
     response::Redirect,
     routing::{delete, get, post},
     Router,
@@ -65,7 +66,10 @@ pub fn account_routers() -> Router {
             "/{account_id}/rules/resolve_conflicts",
             post(resolve_conflicts_rules),
         )
-        .route("/{account_id}/upload", post(upload_transaction_file))
+        .route(
+            "/{account_id}/upload",
+            post(upload_transaction_file).layer(DefaultBodyLimit::max(10 * 1024 * 1024)),
+        )
         .route("/{account_id}/settings", get(get_account_setting_handler))
         .route("/{account_id}/settings", post(update_setting_handler))
         .route("/{account_id}/charts", get(get_chart_data))
@@ -79,7 +83,7 @@ pub fn account_routers() -> Router {
             get(get_tag_analysis_report),
         )
         .route(
-            "/{accont_id}/settings/exclude_category",
+            "/{account_id}/settings/exclude_category",
             post(add_excluded_category_handler),
         )
         .route(
@@ -120,7 +124,10 @@ pub fn utilities_routers() -> Router {
     Router::new()
         .route("/", get(get_utilities_handler))
         .route("/backup/export", get(get_backup_handler))
-        .route("/restore", post(restore_full_backup))
+        .route(
+            "/restore",
+            post(restore_full_backup).layer(DefaultBodyLimit::max(10 * 1024 * 1024)),
+        )
 }
 
 pub fn router() -> Router {

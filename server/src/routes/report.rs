@@ -1,6 +1,6 @@
 use std::io;
 
-use axum::{extract::Query, http::StatusCode};
+use axum::extract::Query;
 use csv::WriterBuilder;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder};
 
@@ -21,11 +21,16 @@ pub async fn get_splittable_expenses_report(
         .await
         .map_err(|e| {
             eprintln!("Cannot query settings: {:?}", e);
-            io::Error::new(io::ErrorKind::Other, "Database error")
+            io::Error::other("Database error")
         })?
         .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Settings not found"))?;
 
-    let delimiter: u8 = settings.report_delimiter.as_bytes()[0];
+    let delimiter: u8 = settings
+        .report_delimiter
+        .as_bytes()
+        .first()
+        .copied()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "report_delimiter is empty"))?;
     let decimal_separator = settings.report_decimal_separator.as_str();
 
     let start_date = chrono::NaiveDate::parse_from_str(&range.start, "%Y-%m-%d")
@@ -45,11 +50,11 @@ pub async fn get_splittable_expenses_report(
         .order_by_asc(transaction::Column::Date)
         .all(db)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR);
+        .map_err(|e| io::Error::other(format!("DB error: {e}")))?;
 
-    writer.write_record(&["Descrizione", "Speso Netto", "Da Pagare"])?;
+    writer.write_record(["Descrizione", "Speso Netto", "Da Pagare"])?;
 
-    for transaction in transactions.unwrap() {
+    for transaction in transactions {
         let value = transaction.value;
         let value_str = format!("{:.2}", value).replace('.', decimal_separator);
 
@@ -67,7 +72,7 @@ pub async fn get_splittable_expenses_report(
 
     let inner = writer
         .into_inner()
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+        .map_err(io::Error::other)?;
 
     Ok(inner)
 }

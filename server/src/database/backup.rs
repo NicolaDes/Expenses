@@ -1,4 +1,3 @@
-use axum::http::StatusCode;
 use chrono::{DateTime, NaiveDate, Utc};
 use sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
@@ -17,7 +16,8 @@ pub struct FullBackupDTO {
     pub categories: Vec<CategoryDTO>,
     pub account_rules: Vec<AccountRuleDTO>,
     pub settings: Vec<AccountSettingsDTO>,
-    pub exlcuded_categories: Vec<SettingsExcludedCategoriesDTO>,
+    #[serde(rename = "exlcuded_categories")]
+    pub excluded_categories: Vec<SettingsExcludedCategoriesDTO>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -92,12 +92,8 @@ pub struct SettingsExcludedCategoriesDTO {
     pub category_id: i32,
 }
 
-pub async fn get_full_backup(db: &DatabaseConnection) -> Result<String, StatusCode> {
-    let accounts_model = account::Entity::find().all(db).await.map_err(|e| {
-        eprintln!("Errore recuperando accounts: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
+pub async fn get_full_backup(db: &DatabaseConnection) -> anyhow::Result<String> {
+    let accounts_model = account::Entity::find().all(db).await?;
     let accounts_dto: Vec<AccountDTO> = accounts_model
         .into_iter()
         .map(|a| AccountDTO {
@@ -106,11 +102,7 @@ pub async fn get_full_backup(db: &DatabaseConnection) -> Result<String, StatusCo
         })
         .collect();
 
-    let budgets_model = budget::Entity::find().all(db).await.map_err(|e| {
-        eprintln!("Errore recuperando budgets: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
+    let budgets_model = budget::Entity::find().all(db).await?;
     let budgets_dto: Vec<BudgetDTO> = budgets_model
         .into_iter()
         .map(|b| BudgetDTO {
@@ -121,11 +113,7 @@ pub async fn get_full_backup(db: &DatabaseConnection) -> Result<String, StatusCo
         })
         .collect();
 
-    let transactions_model = transaction::Entity::find().all(db).await.map_err(|e| {
-        eprintln!("Errore recuperando transazioni: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
+    let transactions_model = transaction::Entity::find().all(db).await?;
     let transactions_dto: Vec<TransactionDTO> = transactions_model
         .into_iter()
         .map(|t| TransactionDTO {
@@ -140,11 +128,7 @@ pub async fn get_full_backup(db: &DatabaseConnection) -> Result<String, StatusCo
         })
         .collect();
 
-    let rules_model = rule::Entity::find().all(db).await.map_err(|e| {
-        eprintln!("Errore recuperando rules: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
+    let rules_model = rule::Entity::find().all(db).await?;
     let rules_dto: Vec<RuleDTO> = rules_model
         .into_iter()
         .map(|r| RuleDTO {
@@ -159,11 +143,7 @@ pub async fn get_full_backup(db: &DatabaseConnection) -> Result<String, StatusCo
         })
         .collect();
 
-    let categories_model = category::Entity::find().all(db).await.map_err(|e| {
-        eprintln!("Errore recuperando categories: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
+    let categories_model = category::Entity::find().all(db).await?;
     let categories_dto: Vec<CategoryDTO> = categories_model
         .into_iter()
         .map(|c| CategoryDTO {
@@ -174,11 +154,7 @@ pub async fn get_full_backup(db: &DatabaseConnection) -> Result<String, StatusCo
         })
         .collect();
 
-    let account_rules_model = account_rule::Entity::find().all(db).await.map_err(|e| {
-        eprintln!("Errore recuperando account_rules: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
+    let account_rules_model = account_rule::Entity::find().all(db).await?;
     let account_rules_dto: Vec<AccountRuleDTO> = account_rules_model
         .into_iter()
         .map(|ar| AccountRuleDTO {
@@ -188,39 +164,28 @@ pub async fn get_full_backup(db: &DatabaseConnection) -> Result<String, StatusCo
         })
         .collect();
 
-    let settings_model = settings::Entity::find().all(db).await.map_err(|e| {
-        eprintln!("Errore recuperando transazioni: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
+    let settings_model = settings::Entity::find().all(db).await?;
     let settings_dto: Vec<AccountSettingsDTO> = settings_model
         .into_iter()
-        .map(|account_setting| AccountSettingsDTO {
-            id: account_setting.id,
-            account_id: account_setting.account_id,
-            date_index: account_setting.date_index,
-            description_index: account_setting.description_index,
-            value_index: account_setting.value_index,
-            starter_string: account_setting.starter_string,
-            report_delimiter: account_setting.report_delimiter,
-            report_decimal_separator: account_setting.report_decimal_separator,
+        .map(|s| AccountSettingsDTO {
+            id: s.id,
+            account_id: s.account_id,
+            date_index: s.date_index,
+            description_index: s.description_index,
+            value_index: s.value_index,
+            starter_string: s.starter_string,
+            report_delimiter: s.report_delimiter,
+            report_decimal_separator: s.report_decimal_separator,
         })
         .collect();
 
-    let excluded_categories_model = settings_excluded_category::Entity::find()
-        .all(db)
-        .await
-        .map_err(|e| {
-            eprintln!("Error retrieving excluded categories: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
+    let excluded_categories_model = settings_excluded_category::Entity::find().all(db).await?;
     let excluded_categories_dto: Vec<SettingsExcludedCategoriesDTO> = excluded_categories_model
         .into_iter()
-        .map(|excluded_category| SettingsExcludedCategoriesDTO {
-            id: excluded_category.id,
-            settings_id: excluded_category.settings_id,
-            category_id: excluded_category.category_id,
+        .map(|ec| SettingsExcludedCategoriesDTO {
+            id: ec.id,
+            settings_id: ec.settings_id,
+            category_id: ec.category_id,
         })
         .collect();
 
@@ -232,13 +197,9 @@ pub async fn get_full_backup(db: &DatabaseConnection) -> Result<String, StatusCo
         categories: categories_dto,
         account_rules: account_rules_dto,
         settings: settings_dto,
-        exlcuded_categories: excluded_categories_dto,
+        excluded_categories: excluded_categories_dto,
     };
 
-    let json_backup = serde_json::to_string_pretty(&backup).map_err(|e| {
-        eprintln!("Errore serializzando JSON: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
+    let json_backup = serde_json::to_string_pretty(&backup)?;
     Ok(json_backup)
 }

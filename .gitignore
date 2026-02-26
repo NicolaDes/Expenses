@@ -24,3 +24,7 @@ target
 
 # Database
 .database-data/
+
+.vscode/
+.todos/
+.claude/

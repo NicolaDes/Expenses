@@ -1,7 +1,7 @@
 use crate::{
     database::{
-        account::{self, Model as AccountModel},
-        budget, category, settings,
+        account::Model as AccountModel,
+        accounts, budgets, category, settingss,
         transaction::{self},
     },
     routes::{common::DateRange, report::get_splittable_expenses_report},
@@ -15,8 +15,8 @@ use axum::{
 };
 use chrono::{Datelike, Duration, NaiveDate, Utc};
 use sea_orm::{
-    ColumnTrait, DatabaseConnection, EntityTrait, ModelTrait, PaginatorTrait, QueryFilter,
-    QueryOrder, QuerySelect,
+    ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
+    QuerySelect,
 };
 use serde::Serialize;
 
@@ -40,9 +40,9 @@ pub struct PeriodStats {
 
 #[derive(Serialize)]
 pub struct ChartData {
-    montly_labels: Vec<String>,
-    montly_expenses: Vec<f64>,
-    montly_income: Vec<f64>,
+    monthly_labels: Vec<String>,
+    monthly_expenses: Vec<f64>,
+    monthly_income: Vec<f64>,
     income_categories: Vec<String>,
     income_values: Vec<f64>,
     expense_categories_category: Vec<String>,
@@ -54,13 +54,13 @@ pub struct ChartData {
     net_balance: f64,
     transactions_count: i32,
     transactions_count_used: i32,
-    mean_montly_income: f64,
-    mean_montly_expenses: f64,
+    mean_monthly_income: f64,
+    mean_monthly_expenses: f64,
     mean_income_increment: f64,
     mean_income_increment_percentage: f64,
     mean_expenses_increment: f64,
     mean_expenses_increment_percentage: f64,
-    mean_montly_net_balance: f64,
+    mean_monthly_net_balance: f64,
     mean_net_balance_increment: f64,
     mean_net_balance_increment_percentage: f64,
 }
@@ -84,90 +84,68 @@ pub async fn get_account_detail(
     Path(account_id): Path<i32>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> Result<Html<String>, StatusCode> {
-    let settings = settings::Entity::find()
-        .filter(settings::Column::AccountId.eq(account_id))
-        .one(&db)
+    let excluded_categories = settingss::get_excluded_categories_for_account(&db, account_id)
         .await
-        .map_err(|e| {
-            eprintln!("Cannot query settings: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?
-        .ok_or(StatusCode::NOT_FOUND)?;
-
-    let excluded_categories = settings
-        .find_related(category::Entity)
-        .all(&db)
-        .await
-        .map_err(|e| {
-            eprintln!(
-                "Error retrievieng excluded categories from settings: {:?}",
-                e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+        .expect("Error retrievieng excluded categories from settings");
 
     let unused_category_ids: Vec<i32> = excluded_categories.iter().map(|cat| cat.id).collect();
 
-    let account_model = account::Entity::find_by_id(account_id)
-        .one(&db)
-        .await
-        .expect("Errore DB")
-        .expect("Account non trovato");
+    let account_model = accounts::get_account(&db, account_id).await.unwrap();
 
     let today = Utc::now().date_naive();
     let first_of_month = NaiveDate::from_ymd_opt(today.year(), today.month(), 1).unwrap();
     let last_day_prev_month = first_of_month - Duration::days(1);
     let start_of_year = NaiveDate::from_ymd_opt(today.year(), 1, 1).unwrap();
 
-    let budget_models = budget::Entity::find()
-        .filter(budget::Column::AccountId.eq(account_id))
-        .all(&db)
+    let budgets_model = budgets::get_budgets_for_account(&db, account_id)
         .await
         .unwrap();
 
     let mut budgets: Vec<BudgetsTemplate> = vec![];
 
-    for budget_model in budget_models {
+    for budget_model in budgets_model {
         let mut sum = 0.0;
 
-        let category_option = category::Entity::find()
+        // TODO: Move into database modules
+        let category_models = category::Entity::find()
             .filter(category::Column::Category.eq(budget_model.name.clone()))
-            .one(&db)
+            .all(&db)
             .await
             .unwrap();
 
-        if let Some(category_model) = category_option {
-            let transactions = transaction::Entity::find()
-                .filter(transaction::Column::AccountId.eq(account_id))
-                .filter(transaction::Column::Date.gt(start_of_year))
-                .filter(transaction::Column::CategoryId.eq(category_model.id))
-                .all(&db)
-                .await
-                .unwrap();
+        let category_ids: Vec<i32> = category_models.iter().map(|model| model.id).collect();
 
-            for transaction in transactions {
-                sum = sum
-                    + (transaction.value
-                        - (transaction.value * transaction.perc_to_exclude as f64))
-                        .abs();
-            }
+        // TODO: Move into database modules
+        let transactions = transaction::Entity::find()
+            .filter(transaction::Column::AccountId.eq(account_id))
+            .filter(transaction::Column::Date.gt(start_of_year))
+            .filter(transaction::Column::CategoryId.is_in(category_ids))
+            .all(&db)
+            .await
+            .unwrap();
+
+        for transaction in transactions {
+            sum += (transaction.value - (transaction.value * transaction.perc_to_exclude as f64))
+                .abs();
         }
 
         budgets.push(BudgetsTemplate {
             label: budget_model.name.clone(),
             value: sum,
             limit: budget_model.value,
-            percentage: ((sum / budget_model.value) * 100.0 as f64) as i32,
+            percentage: ((sum / budget_model.value) * 100.0_f64) as i32,
             year: start_of_year.year(),
         });
     }
 
+    // TODO: Move into database modules
     let categories = category::Entity::find()
         .filter(category::Column::Id.is_not_in(unused_category_ids))
         .all(&db)
         .await
         .expect("Errore DB");
 
+    // TODO: Move into database modules
     let tags = transaction::Entity::find()
         .filter(transaction::Column::AccountId.eq(account_id))
         .filter(transaction::Column::Date.gt(start_of_year))
@@ -195,7 +173,10 @@ pub async fn get_account_detail(
         sub_menu: "detail",
     };
 
-    Ok(Html(html.render().unwrap()))
+    Ok(Html(
+        html.render()
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
+    ))
 }
 
 pub async fn get_expenses_report(
@@ -203,16 +184,7 @@ pub async fn get_expenses_report(
     Query(range): Query<DateRange>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> impl IntoResponse {
-    let settings = settings::Entity::find()
-        .filter(settings::Column::AccountId.eq(account_id))
-        .one(&db)
-        .await
-        .expect("Cannot query settings")
-        .unwrap();
-
-    let excluded_categories = settings
-        .find_related(category::Entity)
-        .all(&db)
+    let excluded_categories = settingss::get_excluded_categories_for_account(&db, account_id)
         .await
         .expect("Error retrievieng excluded categories from settings");
 
@@ -245,33 +217,15 @@ pub async fn get_chart_data(
     Query(range): Query<DateRange>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> Result<Json<ChartData>, StatusCode> {
-    let settings = settings::Entity::find()
-        .filter(settings::Column::AccountId.eq(account_id))
-        .one(&db)
+    let excluded_categories = settingss::get_excluded_categories_for_account(&db, account_id)
         .await
-        .map_err(|e| {
-            eprintln!("Cannot query settings: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?
-        .ok_or(StatusCode::NOT_FOUND)?;
-
-    let excluded_categories = settings
-        .find_related(category::Entity)
-        .all(&db)
-        .await
-        .map_err(|e| {
-            eprintln!(
-                "Error retrievieng excluded categories from settings: {:?}",
-                e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+        .expect("Error retrievieng excluded categories from settings");
 
     let unused_category_ids: Vec<i32> = excluded_categories.iter().map(|cat| cat.id).collect();
 
-    let mut montly_labels = vec![];
-    let mut montly_expenses = vec![];
-    let mut montly_income = vec![];
+    let mut monthly_labels = vec![];
+    let mut monthly_expenses = vec![];
+    let mut monthly_income = vec![];
     let mut income_categories = vec![];
     let mut income_values = vec![];
     let mut expense_categories_category = vec![];
@@ -287,6 +241,7 @@ pub async fn get_chart_data(
     let end_date = chrono::NaiveDate::parse_from_str(&range.end, "%Y-%m-%d")
         .map_err(|_| StatusCode::BAD_REQUEST)?;
 
+    // TODO: Move into database modules
     let transactions_count = transaction::Entity::find()
         .filter(transaction::Column::AccountId.eq(account_id))
         .filter(transaction::Column::Date.between(start_date, end_date))
@@ -294,6 +249,7 @@ pub async fn get_chart_data(
         .await
         .unwrap() as i32;
 
+    // TODO: Move into database modules
     let transactions = transaction::Entity::find()
         .filter(transaction::Column::AccountId.eq(account_id))
         .filter(transaction::Column::CategoryId.is_not_in(unused_category_ids))
@@ -307,7 +263,7 @@ pub async fn get_chart_data(
     for transaction_with_cat in transactions.unwrap() {
         transactions_count_used += 1;
 
-        let montly_label = transaction_with_cat.0.date.format("%b %Y").to_string();
+        let monthly_label = transaction_with_cat.0.date.format("%b %Y").to_string();
         let weighted_transaction_value = transaction_with_cat.0.value
             - (transaction_with_cat.0.value * (transaction_with_cat.0.perc_to_exclude as f64));
 
@@ -317,21 +273,21 @@ pub async fn get_chart_data(
             expenses += weighted_transaction_value;
         }
 
-        if !montly_labels.contains(&montly_label) {
-            montly_labels.push(montly_label.clone());
-            montly_expenses.push(0.0);
-            montly_income.push(0.0);
+        if !monthly_labels.contains(&monthly_label) {
+            monthly_labels.push(monthly_label.clone());
+            monthly_expenses.push(0.0);
+            monthly_income.push(0.0);
         }
 
-        let idx = montly_labels
+        let idx = monthly_labels
             .iter()
-            .position(|l| l == &montly_label)
+            .position(|l| l == &monthly_label)
             .unwrap();
 
         if weighted_transaction_value > 0.0 {
-            montly_income[idx] += weighted_transaction_value;
+            monthly_income[idx] += weighted_transaction_value;
         } else {
-            montly_expenses[idx] += weighted_transaction_value;
+            monthly_expenses[idx] += weighted_transaction_value;
         }
 
         if transaction_with_cat.0.value > 0.0 {
@@ -395,48 +351,104 @@ pub async fn get_chart_data(
         }
     }
 
-    let months_size = montly_labels.len() as f64;
+    let months_size = monthly_labels.len() as f64;
 
     let net_balance = income + expenses;
-    let net_balance_vec: Vec<f64> = montly_income
+    let net_balance_vec: Vec<f64> = monthly_income
         .iter()
-        .zip(montly_expenses.iter())
+        .zip(monthly_expenses.iter())
         .map(|(x, y)| x + y)
         .collect();
 
-    let income_except_last_month = montly_income[..montly_income.len() - 1].iter().sum::<f64>();
-    let mean_income_increment =
-        (income_except_last_month / (months_size - 1 as f64)) - (income / months_size);
-    let mean_income_increment_percentage = (((income / months_size)
-        - (income_except_last_month / (months_size - 1 as f64)))
-        / (income_except_last_month / (months_size - 1 as f64)))
-        * 100 as f64;
+    if monthly_labels.is_empty() {
+        return Ok(Json(ChartData {
+            monthly_labels,
+            monthly_expenses,
+            monthly_income,
+            income_categories,
+            income_values,
+            expense_categories_category,
+            expense_values_category,
+            expense_categories_macrocategory,
+            expense_values_macrocategory,
+            income,
+            expenses,
+            net_balance,
+            transactions_count,
+            transactions_count_used,
+            mean_monthly_income: 0.0,
+            mean_monthly_expenses: 0.0,
+            mean_income_increment: 0.0,
+            mean_income_increment_percentage: 0.0,
+            mean_expenses_increment: 0.0,
+            mean_expenses_increment_percentage: 0.0,
+            mean_monthly_net_balance: 0.0,
+            mean_net_balance_increment: 0.0,
+            mean_net_balance_increment_percentage: 0.0,
+        }));
+    }
 
-    let expenses_except_last_month = montly_expenses[..montly_expenses.len() - 1]
+    if monthly_labels.len() == 1 {
+        return Ok(Json(ChartData {
+            monthly_labels,
+            monthly_expenses,
+            monthly_income,
+            income_categories,
+            income_values,
+            expense_categories_category,
+            expense_values_category,
+            expense_categories_macrocategory,
+            expense_values_macrocategory,
+            income,
+            expenses,
+            net_balance,
+            transactions_count,
+            transactions_count_used,
+            mean_monthly_income: income,
+            mean_monthly_expenses: expenses,
+            mean_income_increment: 0.0,
+            mean_income_increment_percentage: 0.0,
+            mean_expenses_increment: 0.0,
+            mean_expenses_increment_percentage: 0.0,
+            mean_monthly_net_balance: net_balance,
+            mean_net_balance_increment: 0.0,
+            mean_net_balance_increment_percentage: 0.0,
+        }));
+    }
+
+    let income_except_last_month = monthly_income[..monthly_income.len() - 1].iter().sum::<f64>();
+    let mean_income_increment =
+        (income_except_last_month / (months_size - 1_f64)) - (income / months_size);
+    let mean_income_increment_percentage = (((income / months_size)
+        - (income_except_last_month / (months_size - 1_f64)))
+        / (income_except_last_month / (months_size - 1_f64)))
+        * 100_f64;
+
+    let expenses_except_last_month = monthly_expenses[..monthly_expenses.len() - 1]
         .iter()
         .sum::<f64>();
     let mean_expenses_increment =
-        (expenses_except_last_month / (months_size - 1 as f64)) - (expenses / months_size);
+        (expenses_except_last_month / (months_size - 1_f64)) - (expenses / months_size);
     let mean_expenses_increment_percentage = (((expenses / months_size)
-        - (expenses_except_last_month / (months_size - 1 as f64)))
-        / (expenses_except_last_month / (months_size - 1 as f64)))
-        * 100 as f64;
+        - (expenses_except_last_month / (months_size - 1_f64)))
+        / (expenses_except_last_month / (months_size - 1_f64)))
+        * 100_f64;
 
     let net_balance_except_last_month = net_balance_vec[..net_balance_vec.len() - 1]
         .iter()
         .sum::<f64>();
-    let mean_montly_net_balance = net_balance / months_size;
+    let mean_monthly_net_balance = net_balance / months_size;
     let mean_net_balance_increment =
-        (net_balance_except_last_month / (months_size - 1 as f64)) - (net_balance / months_size);
+        (net_balance_except_last_month / (months_size - 1_f64)) - (net_balance / months_size);
     let mean_net_balance_increment_percentage = (((net_balance / months_size)
-        - (net_balance_except_last_month / (months_size - 1 as f64)))
-        / (net_balance_except_last_month / (months_size - 1 as f64)))
-        * 100 as f64;
+        - (net_balance_except_last_month / (months_size - 1_f64)))
+        / (net_balance_except_last_month / (months_size - 1_f64)))
+        * 100_f64;
 
     Ok(Json(ChartData {
-        montly_labels,
-        montly_expenses,
-        montly_income,
+        monthly_labels,
+        monthly_expenses,
+        monthly_income,
         income_categories,
         income_values,
         expense_categories_category,
@@ -448,13 +460,13 @@ pub async fn get_chart_data(
         net_balance,
         transactions_count,
         transactions_count_used,
-        mean_montly_income: income / months_size,
-        mean_montly_expenses: expenses / months_size,
+        mean_monthly_income: income / months_size,
+        mean_monthly_expenses: expenses / months_size,
         mean_income_increment,
         mean_income_increment_percentage,
         mean_expenses_increment,
         mean_expenses_increment_percentage,
-        mean_montly_net_balance,
+        mean_monthly_net_balance,
         mean_net_balance_increment,
         mean_net_balance_increment_percentage,
     }))
@@ -465,14 +477,15 @@ pub async fn get_category_analysis_report(
     Query(range): Query<DateRange>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> Result<Json<CategoryChartData>, StatusCode> {
-    let mut montly_labels = vec![];
-    let mut montly_values = vec![];
+    let mut monthly_labels = vec![];
+    let mut monthly_values = vec![];
 
     let start_date = chrono::NaiveDate::parse_from_str(&range.start, "%Y-%m-%d")
         .map_err(|_| StatusCode::BAD_REQUEST)?;
     let end_date = chrono::NaiveDate::parse_from_str(&range.end, "%Y-%m-%d")
         .map_err(|_| StatusCode::BAD_REQUEST)?;
 
+    // TODO: Move into database modules
     let transactions = transaction::Entity::find()
         .filter(transaction::Column::AccountId.eq(account_id))
         .filter(transaction::Column::CategoryId.eq(category_id))
@@ -484,26 +497,26 @@ pub async fn get_category_analysis_report(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR);
 
     for transaction_with_cat in transactions.unwrap() {
-        let montly_label = transaction_with_cat.0.date.format("%b %Y").to_string();
+        let monthly_label = transaction_with_cat.0.date.format("%b %Y").to_string();
         let weighted_transaction_value = transaction_with_cat.0.value
             - (transaction_with_cat.0.value * (transaction_with_cat.0.perc_to_exclude as f64));
 
-        if !montly_labels.contains(&montly_label) {
-            montly_labels.push(montly_label.clone());
-            montly_values.push(0.0);
+        if !monthly_labels.contains(&monthly_label) {
+            monthly_labels.push(monthly_label.clone());
+            monthly_values.push(0.0);
         }
 
-        let idx = montly_labels
+        let idx = monthly_labels
             .iter()
-            .position(|l| l == &montly_label)
+            .position(|l| l == &monthly_label)
             .unwrap();
 
-        montly_values[idx] += weighted_transaction_value.abs();
+        monthly_values[idx] += weighted_transaction_value.abs();
     }
 
     Ok(Json(CategoryChartData {
-        labels: montly_labels,
-        values: montly_values,
+        labels: monthly_labels,
+        values: monthly_values,
     }))
 }
 
@@ -512,14 +525,15 @@ pub async fn get_tag_analysis_report(
     Query(range): Query<DateRange>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> Result<Json<CategoryChartData>, StatusCode> {
-    let mut montly_labels = vec![];
-    let mut montly_values = vec![];
+    let mut monthly_labels = vec![];
+    let mut monthly_values = vec![];
 
     let start_date = chrono::NaiveDate::parse_from_str(&range.start, "%Y-%m-%d")
         .map_err(|_| StatusCode::BAD_REQUEST)?;
     let end_date = chrono::NaiveDate::parse_from_str(&range.end, "%Y-%m-%d")
         .map_err(|_| StatusCode::BAD_REQUEST)?;
 
+    // TODO: Move into database modules
     let transactions = transaction::Entity::find()
         .filter(transaction::Column::AccountId.eq(account_id))
         .filter(transaction::Column::Label.eq(tag))
@@ -531,25 +545,25 @@ pub async fn get_tag_analysis_report(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR);
 
     for transaction_with_cat in transactions.unwrap() {
-        let montly_label = transaction_with_cat.0.date.format("%b %Y").to_string();
+        let monthly_label = transaction_with_cat.0.date.format("%b %Y").to_string();
         let weighted_transaction_value = transaction_with_cat.0.value
             - (transaction_with_cat.0.value * (transaction_with_cat.0.perc_to_exclude as f64));
 
-        if !montly_labels.contains(&montly_label) {
-            montly_labels.push(montly_label.clone());
-            montly_values.push(0.0);
+        if !monthly_labels.contains(&monthly_label) {
+            monthly_labels.push(monthly_label.clone());
+            monthly_values.push(0.0);
         }
 
-        let idx = montly_labels
+        let idx = monthly_labels
             .iter()
-            .position(|l| l == &montly_label)
+            .position(|l| l == &monthly_label)
             .unwrap();
 
-        montly_values[idx] += weighted_transaction_value.abs();
+        monthly_values[idx] += weighted_transaction_value.abs();
     }
 
     Ok(Json(CategoryChartData {
-        labels: montly_labels,
-        values: montly_values,
+        labels: monthly_labels,
+        values: monthly_values,
     }))
 }

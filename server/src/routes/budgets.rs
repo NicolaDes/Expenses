@@ -1,9 +1,9 @@
 use askama::Template;
 use axum::{extract::Path, http::StatusCode, response::IntoResponse, Extension, Form};
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, DatabaseConnection, EntityTrait};
+use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 
-use crate::database::{account, budget};
+use crate::database::{account, budget, budgets};
 
 #[derive(Template)]
 #[template(path = "budgets.html")]
@@ -29,6 +29,8 @@ pub struct BudgetForm {
 pub async fn get_budgets_handler(
     Extension(db): Extension<DatabaseConnection>,
 ) -> Result<impl axum::response::IntoResponse, axum::http::StatusCode> {
+    use sea_orm::EntityTrait;
+
     let budgets_with_cats = budget::Entity::find()
         .find_with_related(account::Entity)
         .all(&db)
@@ -38,7 +40,7 @@ pub async fn get_budgets_handler(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    let budgets = budgets_with_cats
+    let budgets_list = budgets_with_cats
         .into_iter()
         .map(|(bud, acc)| {
             let account_name = acc
@@ -49,7 +51,7 @@ pub async fn get_budgets_handler(
 
             BudgetWithCategory {
                 model: bud,
-                account_name: account_name,
+                account_name,
             }
         })
         .collect();
@@ -60,21 +62,25 @@ pub async fn get_budgets_handler(
     })?;
 
     let html = BudgetsTemplate {
-        budgets,
+        budgets: budgets_list,
         accounts,
         menu: "budgets",
     };
-    Ok(axum::response::Html(html.render().unwrap()))
+    let rendered = html.render().map_err(|e| {
+        eprintln!("Template render error: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+    Ok(axum::response::Html(rendered))
 }
 
 pub async fn delete_budget(
     Path(budget_id): Path<i32>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> impl IntoResponse {
-    match budget::Entity::delete_by_id(budget_id).exec(&db).await {
+    match budgets::delete_budget(&db, budget_id).await {
         Ok(_) => axum::http::StatusCode::NO_CONTENT,
         Err(err) => {
-            eprintln!("Errore eliminando transazione {}: {}", budget_id, err);
+            eprintln!("Error deleting budget {}: {}", budget_id, err);
             axum::http::StatusCode::INTERNAL_SERVER_ERROR
         }
     }
@@ -85,21 +91,11 @@ pub async fn edit_budget(
     Extension(db): Extension<DatabaseConnection>,
     Form(form): Form<BudgetForm>,
 ) -> impl IntoResponse {
-    let mut budget: budget::ActiveModel = budget::Entity::find_by_id(budget_id)
-        .one(&db)
-        .await
-        .expect("Error reading the budget!")
-        .unwrap()
-        .into();
-
-    budget.account_id = Set(form.account_id);
-    budget.name = Set(form.name);
-    budget.value = Set(form.value);
-
-    let _ = budget.update(&db).await.map_err(|err| {
-        eprintln!("Cannot update budget: {}", err);
-        return StatusCode::INTERNAL_SERVER_ERROR;
-    });
-
-    return StatusCode::OK;
+    match budgets::edit_budget(&db, budget_id, form.account_id, form.name, form.value).await {
+        Ok(_) => StatusCode::OK,
+        Err(err) => {
+            eprintln!("Cannot update budget {}: {}", budget_id, err);
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+    }
 }

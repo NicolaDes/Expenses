@@ -32,16 +32,16 @@
             <div class="cards-flex-grid">
                 <div class="chart-card stat-card card-span-6 card-row-span-2">
                     <div class="card-body">
-                        <h4>📈 Montly Net Balace</h4>
+                        <h4>📈 Monthly Net Balace</h4>
                     </div>
                     <div class="card-header">
-                        <canvas id="montlyNetBalance"></canvas>
+                        <canvas id="monthlyNetBalance"></canvas>
                     </div>
                 </div>
 
                 <div class="chart-card stat-card card-span-6 card-row-span-2">
                     <div class="card-body">
-                        <h4>📊 Montly Income vs Outcome</h4>
+                        <h4>📊 Monthly Income vs Outcome</h4>
                     </div>
                     <div class="card-header">
                         <canvas id="incomeVsExpenseChart"></canvas>
@@ -94,13 +94,13 @@
 
                 <div class="stat-card card-span-2 card-row-span-1">
                     <div class="card-header">
-                        <h2>Montly information</h2>
+                        <h2>Monthly information</h2>
                     </div>
 
                     <div class="cards-stack card-body">
                         <div class="stat-card">
                             <div class="card-header">
-                                <h3>📈 Mean montly income</h3>
+                                <h3>📈 Mean monthly income</h3>
                             </div>
                             <div class="card-body">
                                 <span id="stat-avg-income"></span>
@@ -109,7 +109,7 @@
 
                         <div class="stat-card">
                             <div class="card-header">
-                                <h3>📉 Mean montly expenses</h3>
+                                <h3>📉 Mean monthly expenses</h3>
                             </div>
                             <div class="card-body">
                                 <span id="stat-avg-expense"></span>
@@ -118,10 +118,10 @@
 
                         <div class="stat-card">
                             <div class="card-header">
-                                <h3>📉 Mean net-balance montly </h3>
+                                <h3>📉 Mean net-balance monthly </h3>
                             </div>
                             <div class="card-body">
-                                <span id="stat-avg-net-balance-montly"></span>
+                                <span id="stat-avg-net-balance-monthly"></span>
                             </div>
                         </div>
                     </div>
@@ -221,7 +221,8 @@
             {% for budget in budgets %}
             <div class="stat-card card-span-4 card-row-span-1">
                 <div class="progress-container" style="margin-bottom: 20px;">
-                    <span class="card-header progress-label">{{budget.label}} for {{budget.year}}</span>
+                    <span class="card-header progress-label">{{budget.label}} for {{budget.year}} | remaining: {{
+                        "{:.2}" | format(budget.limit - budget.value) }} €</span>
                     <div class="card-body progress-bar">
                         {% if budget.percentage < 85 %} <div class="progress-fill success"
                             style="width: {{budget.percentage}}%">
@@ -234,8 +235,8 @@
                 {% endif %}
             </div>
             <div style="display: flex; justify-content: space-between; margin-top: 8px;">
-                <span class="progress-value">{{budget.value}}€</span>
-                <span style="font-size: 14px; color: var(--color-label);">of {{budget.limit}}€</span>
+                <span class="progress-value">{{"{:.2}" | format(budget.value)}} €</span>
+                <span style="font-size: 14px; color: var(--color-label);">of {{budget.limit}} €</span>
             </div>
             {% if budget.percentage < 85 %} <span class="status-badge success">Healty</span>
                 {% elif budget.percentage <= 100 %} <span class="status-badge warning">Watch Out</span>
@@ -278,7 +279,7 @@
     async function update_charts() {
         const accountId = document.body.dataset.accountId;
 
-        const montlyNetBalanceId = "montlyNetBalance";
+        const monthlyNetBalanceId = "monthlyNetBalance";
         const multiLineId = "incomeVsExpenseChart";
         const saveRateId = "savingRateChart";
 
@@ -297,12 +298,12 @@
 
             const data = await res.json();
 
-            createLineChart(montlyNetBalanceId, data.montly_labels, data.montly_income.map((val, i) => val + data.montly_expenses[i]), "net-balance");
-            createMultiLineChartWithStats(multiLineId, data.montly_labels, [
-                { label: "Income", data: data.montly_income },
-                { label: "Outcome", data: data.montly_expenses }
+            createLineChart(monthlyNetBalanceId, data.monthly_labels, data.monthly_income.map((val, i) => val + data.monthly_expenses[i]), "net-balance");
+            createMultiLineChartWithStats(multiLineId, data.monthly_labels, [
+                { label: "Income", data: data.monthly_income },
+                { label: "Outcome", data: data.monthly_expenses }
             ]);
-            createLineChart(saveRateId, data.montly_labels, data.montly_income.map((val, i) => savingRate(val, data.montly_expenses[i])), "Save Rate [%]");
+            createLineChart(saveRateId, data.monthly_labels, data.monthly_income.map((val, i) => savingRate(val, data.monthly_expenses[i])), "Save Rate [%]");
 
 
             createPieChart(incomePieId, data.income_categories, data.income_values);
@@ -315,18 +316,18 @@
             document.getElementById("stat-balance").textContent = formatEur(data.net_balance);
             document.getElementById("stat-transactions").textContent = `${data.transactions_count_used} / ${data.transactions_count}`;
 
-            document.getElementById("stat-avg-income").textContent = formatEur(data.mean_montly_income);
-            document.getElementById("stat-avg-expense").textContent = formatEur(data.mean_montly_expenses);
-            document.getElementById("stat-avg-net-balance-montly").textContent = formatEur(data.mean_montly_income + data.mean_montly_expenses);
+            document.getElementById("stat-avg-income").textContent = formatEur(data.mean_monthly_income);
+            document.getElementById("stat-avg-expense").textContent = formatEur(data.mean_monthly_expenses);
+            document.getElementById("stat-avg-net-balance-monthly").textContent = formatEur(data.mean_monthly_income + data.mean_monthly_expenses);
 
             document.getElementById("stat-avg-income").innerHTML =
-                formatDiff(data.mean_montly_income, data.mean_income_increment, data.mean_income_increment_percentage);
+                formatDiff(data.mean_monthly_income, data.mean_income_increment, data.mean_income_increment_percentage);
 
             document.getElementById("stat-avg-expense").innerHTML =
-                formatDiff(data.mean_montly_expenses, data.mean_expenses_increment, data.mean_expenses_increment_percentage);
+                formatDiff(data.mean_monthly_expenses, data.mean_expenses_increment, data.mean_expenses_increment_percentage);
 
-            document.getElementById("stat-avg-net-balance-montly").innerHTML =
-                formatDiff(data.mean_montly_net_balance, data.mean_net_balance_increment, data.mean_net_balance_increment_percentage);
+            document.getElementById("stat-avg-net-balance-monthly").innerHTML =
+                formatDiff(data.mean_monthly_net_balance, data.mean_net_balance_increment, data.mean_net_balance_increment_percentage);
 
 
 
