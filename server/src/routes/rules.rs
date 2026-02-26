@@ -59,7 +59,7 @@ pub async fn get_rules_handler(
         .into_iter()
         .map(|(model, cats)| {
             let cat = cats.into_iter().next();
-            let category_id = cat.clone().map(|c| c.id).unwrap();
+            let category_id = cat.as_ref().map(|c| c.id);
             let category_name = cat.map(|c| c.category).unwrap_or_else(|| "-".to_string());
             let label_name = label_map
                 .get(&model.label_id)
@@ -73,7 +73,7 @@ pub async fn get_rules_handler(
                 label_name,
                 label_id,
                 percentage: model.percentage,
-                category_id: Some(category_id),
+                category_id,
                 category_name,
                 regexpr: model.regexpr.unwrap_or_default(),
                 date_start: model.date_start.map(|d| d.to_string()).unwrap_or_default(),

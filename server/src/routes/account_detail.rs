@@ -508,9 +508,9 @@ pub async fn get_category_analysis_report(
         .find_with_related(category::Entity)
         .all(&db)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR);
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    for transaction_with_cat in transactions.unwrap() {
+    for transaction_with_cat in transactions {
         let monthly_label = transaction_with_cat.0.date.format("%b %Y").to_string();
         let weighted_transaction_value = transaction_with_cat.0.value
             - (transaction_with_cat.0.value * (transaction_with_cat.0.perc_to_exclude as f64));
@@ -574,9 +574,9 @@ pub async fn get_tag_analysis_report(
         .find_with_related(category::Entity)
         .all(&db)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR);
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    for transaction_with_cat in transactions.unwrap() {
+    for transaction_with_cat in transactions {
         let monthly_label = transaction_with_cat.0.date.format("%b %Y").to_string();
         let weighted_transaction_value = transaction_with_cat.0.value
             - (transaction_with_cat.0.value * (transaction_with_cat.0.perc_to_exclude as f64));

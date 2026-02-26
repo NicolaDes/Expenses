@@ -58,6 +58,13 @@ pub async fn delete_label_handler(
 ) -> impl IntoResponse {
     match labels::delete_label(&db, label_id).await {
         Ok(_) => (StatusCode::NO_CONTENT).into_response(),
-        Err(err) => (StatusCode::CONFLICT, err.to_string()).into_response(),
+        Err(err) => {
+            let msg = err.to_string();
+            if msg.contains("not found") {
+                (StatusCode::NOT_FOUND, msg).into_response()
+            } else {
+                (StatusCode::CONFLICT, msg).into_response()
+            }
+        }
     }
 }
