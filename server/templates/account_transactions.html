@@ -47,11 +47,11 @@
                     <div class="table-col">{{ t.txt.value }} €</div>
                     <div class="table-col">{{ t.txt.date }}</div>
                     <div class="table-col">{{ t.category_name }}</div>
-                    <div class="table-col">{{ t.txt.label }}</div>
+                    <div class="table-col">{{ t.label_name }}</div>
                     <div class="table-col">{{ t.txt.perc_to_exclude }} %</div>
                     <div class="table-actions">
                         <button class="btn btn-ghost btn-sm" data-id="{{ t.txt.id }}"
-                            onclick='editRowModal("{{ t.txt.id }}", "{{ t.txt.account_id }}", "{{ t.txt.description }}", "{{ t.txt.value }}", "{{ t.txt.perc_to_exclude }}", "{{ t.txt.label }}", "{{ t.txt.date }}", "{% if let Some(c) = t.txt.category_id %}{{ c }} {% endif %}")'>Edit</button>
+                            onclick='editRowModal("{{ t.txt.id }}", "{{ t.txt.account_id }}", "{{ t.txt.description }}", "{{ t.txt.value }}", "{{ t.txt.perc_to_exclude }}", "{{ t.label_name }}", "{{ t.txt.date }}", "{% if let Some(c) = t.txt.category_id %}{{ c }} {% endif %}")'>Edit</button>
                         <button class="btn btn-ghost btn-sm" data-id="{{ t.txt.id }}"
                             onclick='deleteRow("{{ t.txt.id }}", this)'>Delete</button>
                     </div>
@@ -142,7 +142,12 @@
 
                 <div class="form-row">
                     <label for="tx-label">Label</label>
-                    <input id="tx-label" type="text" name="label">
+                    <select id="tx-label" name="label_id">
+                        <option value="">-- No Label --</option>
+                        {% for label in labels %}
+                        <option value="{{ label.id }}">{{ label.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <div class="form-row">
@@ -199,7 +204,12 @@
 
                 <div class="form-row">
                     <label for="edit-transaction-label">Label</label>
-                    <input id="edit-transaction-label" type="text" name="label">
+                    <select id="edit-transaction-label" name="label_id">
+                        <option value="">-- No Label --</option>
+                        {% for label in labels %}
+                        <option value="{{ label.id }}">{{ label.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <div class="form-row">
@@ -328,13 +338,13 @@
 <script type="module">
     import { initHiddenModal } from "/static/js/modals.js";
 
-    function editRowModal(id, account_id, description, value, perc_to_exclude, label, date, category_id) {
+    function editRowModal(id, account_id, description, value, perc_to_exclude, label_id, date, category_id) {
         document.getElementById("edit-transaction-id").value = id;
         document.getElementById("edit-transaction-account_id").value = account_id;
         document.getElementById("edit-transaction-description").value = description;
         document.getElementById("edit-transaction-value").value = value.replace(" €", "");;
         document.getElementById("edit-transaction-perc_to_exclude").value = perc_to_exclude.replace(" %", "");
-        document.getElementById("edit-transaction-label").value = label;
+        document.getElementById("edit-transaction-label").value = label_id ? Number(label_id) : "";
         document.getElementById("edit-transaction-date").value = date;
         document.getElementById("edit-transaction-category").value = Number(category_id);
 

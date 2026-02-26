@@ -16,7 +16,7 @@ use crate::database::{
     account_rule,
     backup::{get_full_backup, FullBackupDTO},
     budget, category,
-    entities::account,
+    entities::{account, label},
     rule, settings, settings_excluded_category, transaction,
 };
 
@@ -28,6 +28,7 @@ struct AccountRulesTemplate<'a> {
 
 #[derive(Serialize)]
 struct RestoreSummary {
+    labels: usize,
     accounts: usize,
     categories: usize,
     rules: usize,
@@ -95,6 +96,7 @@ pub async fn restore_full_backup(
 ) -> impl IntoResponse {
     let mut backup: Option<FullBackupDTO> = None;
     let mut summary = RestoreSummary {
+        labels: 0,
         accounts: 0,
         categories: 0,
         rules: 0,
@@ -190,6 +192,23 @@ pub async fn restore_full_backup(
             .await,
         "Errore eliminando excluded categories"
     );
+    rollback_on_err!(
+        label::Entity::delete_many().exec(&txn).await,
+        "Errore eliminando labels"
+    );
+
+    for lbl in &backup.labels {
+        rollback_on_err!(
+            label::ActiveModel {
+                id: Set(lbl.id),
+                name: Set(lbl.name.clone()),
+            }
+            .insert(&txn)
+            .await,
+            "Errore inserendo label"
+        );
+        summary.labels += 1;
+    }
 
     for a in backup.accounts {
         rollback_on_err!(
@@ -229,7 +248,7 @@ pub async fn restore_full_backup(
                 description: Set(t.description),
                 date: Set(t.date.naive_utc()),
                 perc_to_exclude: Set(t.perc_to_exclude),
-                label: Set(t.label),
+                label_id: Set(t.label_id),
             }
             .insert(&txn)
             .await,
@@ -258,7 +277,7 @@ pub async fn restore_full_backup(
             rule::ActiveModel {
                 id: Set(r.id),
                 name: Set(r.name),
-                label: Set(r.label),
+                label_id: Set(r.label_id),
                 percentage: Set(r.percentage),
                 category_id: Set(r.category_id),
                 regexpr: Set(r.regexpr),
@@ -330,6 +349,7 @@ pub async fn restore_full_backup(
 
     // Reset sequences after commit, using the main connection
     let sequences = [
+        ("labels", "labels_id_seq"),
         ("accounts", "accounts_id_seq"),
         ("categories", "categories_id_seq"),
         ("transactions", "transactions_id_seq"),

@@ -10,7 +10,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub name: String,
-    pub label: String,
+    pub label_id: i32,
     pub percentage: f32,
     pub category_id: i32,
     pub regexpr: Option<String>,
@@ -28,6 +28,12 @@ pub enum Relation {
     Category,
     #[sea_orm(has_many = "super::account_rule::Entity")]
     AccountRule,
+    #[sea_orm(
+        belongs_to = "super::label::Entity",
+        from = "Column::LabelId",
+        to = "super::label::Column::Id"
+    )]
+    Label,
 }
 
 impl ActiveModelBehavior for ActiveModel {}
@@ -45,5 +51,11 @@ impl Related<super::account::Entity> for Entity {
 
     fn via() -> Option<RelationDef> {
         Some(super::account_rule::Relation::Rule.def().rev())
+    }
+}
+
+impl Related<super::label::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Label.def()
     }
 }

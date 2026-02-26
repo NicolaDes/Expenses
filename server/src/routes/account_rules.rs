@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use crate::database::{
-    accounts, categories, rules, transactions,
+    accounts, categories, labels, rules, transactions,
     category,
-    entities::{account, rule, transaction},
+    entities::{account, label, rule, transaction},
 };
 use axum::{
     extract::{Extension, Path},
@@ -24,6 +24,7 @@ struct AccountRulesTemplate<'a> {
     account: account::Model,
     rules: Vec<RuleWithStatus>,
     categories: Vec<category::Model>,
+    labels: Vec<label::Model>,
     uncategorized_transactions: Vec<transaction::Model>,
     menu: &'a str,
     sub_menu: &'a str,
@@ -32,6 +33,16 @@ struct AccountRulesTemplate<'a> {
 struct RuleWithStatus {
     model: rule::Model,
     active: bool,
+    label_name: String,
+}
+
+#[derive(Serialize)]
+struct PreviewRule {
+    id: i32,
+    name: String,
+    label: String,
+    percentage: f32,
+    category_id: i32,
 }
 
 #[derive(Serialize)]
@@ -40,7 +51,7 @@ pub struct PreviewTransaction {
     description: String,
     value: f64,
     date: String,
-    conflicts: Vec<rule::Model>,
+    conflicts: Vec<PreviewRule>,
     label_old_value: String,
     label_new_value: String,
     perc_to_exclude_old_value: f32,
@@ -52,7 +63,7 @@ pub struct PreviewTransaction {
 #[derive(serde::Deserialize)]
 pub struct AddRuleForm {
     name: String,
-    label: String,
+    label_id: i32,
     percentage: f32,
     category_id: i32,
     regexpr: Option<String>,
@@ -87,13 +98,28 @@ pub async fn get_account_rules_handler(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
+    let all_labels = labels::get_all_labels(&db).await.map_err(|e| {
+        eprintln!("Error retrieving labels: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    let label_map: HashMap<i32, String> = all_labels
+        .iter()
+        .map(|l| (l.id, l.name.clone()))
+        .collect();
+
     let rules_with_status: Vec<RuleWithStatus> = all_rules
         .into_iter()
         .map(|r| {
             let id = r.id;
+            let label_name = label_map
+                .get(&r.label_id)
+                .cloned()
+                .unwrap_or_default();
             RuleWithStatus {
                 model: r,
                 active: active_rule_ids.contains(&id),
+                label_name,
             }
         })
         .collect();
@@ -115,6 +141,7 @@ pub async fn get_account_rules_handler(
         account: account_data,
         rules: rules_with_status,
         categories: categories_list,
+        labels: all_labels,
         uncategorized_transactions,
         menu: "accounts",
         sub_menu: "rules",
@@ -172,7 +199,7 @@ pub async fn add_account_rule_handler(
     let inserted_rule = rules::create_rule(
         &db,
         form.name,
-        form.label,
+        form.label_id,
         form.percentage,
         form.category_id,
         form.regexpr,
@@ -254,7 +281,6 @@ pub async fn preview_apply_rules(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    // P3: Batch-load all categories once to avoid N+1 lookups inside the loop
     let all_categories = categories::get_categories(&db).await.map_err(|e| {
         eprintln!("Error loading categories: {:?}", e);
         StatusCode::INTERNAL_SERVER_ERROR
@@ -262,6 +288,15 @@ pub async fn preview_apply_rules(
     let category_map: HashMap<i32, String> = all_categories
         .into_iter()
         .map(|c| (c.id, c.category))
+        .collect();
+
+    let all_labels = labels::get_all_labels(&db).await.map_err(|e| {
+        eprintln!("Error loading labels: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+    let label_map: HashMap<i32, String> = all_labels
+        .into_iter()
+        .map(|l| (l.id, l.name))
         .collect();
 
     let mut previews: Vec<PreviewTransaction> = Vec::new();
@@ -290,7 +325,10 @@ pub async fn preview_apply_rules(
                 .unwrap_or_default();
 
             new_percentage = the_rule.percentage;
-            new_label = the_rule.label.clone();
+            new_label = label_map
+                .get(&the_rule.label_id)
+                .cloned()
+                .unwrap_or_default();
         }
 
         previews.push(PreviewTransaction {
@@ -298,8 +336,21 @@ pub async fn preview_apply_rules(
             description: transaction.description,
             value: transaction.value,
             date: transaction.date.to_string(),
-            conflicts: applicable_rules,
-            label_old_value: transaction.label,
+            conflicts: applicable_rules
+                .iter()
+                .map(|r| PreviewRule {
+                    id: r.id,
+                    name: r.name.clone(),
+                    label: label_map.get(&r.label_id).cloned().unwrap_or_default(),
+                    percentage: r.percentage,
+                    category_id: r.category_id,
+                })
+                .collect(),
+            label_old_value: transaction
+                .label_id
+                .and_then(|id| label_map.get(&id))
+                .cloned()
+                .unwrap_or_default(),
             label_new_value: new_label,
             perc_to_exclude_old_value: transaction.perc_to_exclude,
             perc_to_exclude_new_value: new_percentage,
@@ -336,7 +387,7 @@ pub async fn apply_rules(
         if applicable_rules.len() == 1 {
             let the_rule = &applicable_rules[0];
             let mut the_transaction: transaction::ActiveModel = tx.into();
-            the_transaction.label = Set(the_rule.label.clone());
+            the_transaction.label_id = Set(Some(the_rule.label_id));
             the_transaction.perc_to_exclude = Set(the_rule.percentage);
             the_transaction.category_id = Set(Some(the_rule.category_id));
 
@@ -391,7 +442,7 @@ pub async fn resolve_conflicts_rules(
         };
         let mut the_transaction: transaction::ActiveModel = tx.into();
 
-        the_transaction.label = Set(the_rule.label.clone());
+        the_transaction.label_id = Set(Some(the_rule.label_id));
         the_transaction.perc_to_exclude = Set(the_rule.percentage);
         the_transaction.category_id = Set(Some(the_rule.category_id));
 

@@ -238,7 +238,7 @@ pub async fn upload_transaction_file(
             tx.description,
             naive_dt,
             0.0,
-            "".to_owned(),
+            None,
         )
         .await
         {

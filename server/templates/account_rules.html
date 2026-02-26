@@ -69,7 +69,7 @@
                 {% for rule in rules %}
                 <div class="rule-item {% if rule.active %}active{% else %}inactive{% endif %}"
                     data-rule-id="{{ rule.model.id }}" data-name="{{ rule.model.name }}"
-                    data-label="{{ rule.model.label }}" data-percentage="{{ rule.model.percentage }}"
+                    data-label-id="{{ rule.model.label_id }}" data-percentage="{{ rule.model.percentage }}"
                     data-category-id="{{ rule.model.category_id }}"
                     data-regexpr="{% if let Some(r) = rule.model.regexpr %}{{ r }}{% endif %}"
                     data-date-start="{% if let Some(ds) = rule.model.date_start %}{{ ds }}{% endif %}"
@@ -77,7 +77,7 @@
                     <div class="rule-info">
                         <div class="rule-name">{{ rule.model.name }}</div>
                         <div class="rule-details">
-                            <span class="rule-label">{{ rule.model.label }}</span>
+                            <span class="rule-label">{{ rule.label_name }}</span>
                             <span class="rule-percentage">{{ rule.model.percentage }}%</span>
                         </div>
                     </div>
@@ -130,7 +130,11 @@
                 </div>
                 <div class="form-row">
                     <label for="rule-label">Rule Label</label>
-                    <input id="rule-label" type="text" name="label" required>
+                    <select id="rule-label" name="label_id" required>
+                        {% for label in labels %}
+                        <option value="{{ label.id }}">{{ label.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 <div class="form-row">
                     <label for="rule-percentage">Percentage</label>
@@ -183,7 +187,11 @@
 
                 <div class="form-row">
                     <label for="edit-rule-label">Rule Label</label>
-                    <input id="edit-rule-label" type="text" name="label" required>
+                    <select id="edit-rule-label" name="label_id" required>
+                        {% for label in labels %}
+                        <option value="{{ label.id }}">{{ label.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <div class="form-row">
@@ -253,7 +261,7 @@
 
             document.getElementById("edit-rule-id").value = ruleItem.dataset.ruleId;
             document.getElementById("edit-rule-name").value = ruleItem.dataset.name;
-            document.getElementById("edit-rule-label").value = ruleItem.dataset.label;
+            document.getElementById("edit-rule-label").value = Number(ruleItem.dataset.labelId);
             document.getElementById("edit-rule-percentage").value = ruleItem.dataset.percentage;
             document.getElementById("edit-rule-category").value = ruleItem.dataset.categoryId;
             document.getElementById("edit-rule-regexpr").value = ruleItem.dataset.regexpr || "";

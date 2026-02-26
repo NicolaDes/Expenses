@@ -18,7 +18,7 @@
                         Name
                         <span class="sort-indicator">↕</span>
                     </div>
-                    <div class="table-col sortable" data-field="label">
+                    <div class="table-col sortable" data-field="label_name">
                         Label
                         <span class="sort-indicator">↕</span>
                     </div>
@@ -47,7 +47,7 @@
                 {% for rule in rules %}
                 <div class="table-row">
                     <div class="table-col" data-field="name">{{ rule.name }}</div>
-                    <div class="table-col" data-field="label">{{ rule.label }}</div>
+                    <div class="table-col" data-field="label_name">{{ rule.label_name }}</div>
                     <div class="table-col" data-field="percentage">{{ rule.percentage }}</div>
                     <div class="table-col" data-field="category_name">{{ rule.category_name }}</div>
                     <div class="table-col span-2" data-field="regexpr">{{ rule.regexpr }}</div>
@@ -56,7 +56,7 @@
 
                     <div class="table-actions">
                         <button class="btn btn-ghost btn-sm"
-                            onclick='editRowModal("{{ rule.id }}", "{{ rule.name }}", "{{ rule.label }}", "{{ rule.percentage }}", "{% if let Some(r) = rule.category_id %}{{ r }}{% endif %}", "{{ rule.regexpr }}", "{{ rule.date_start }}", "{{ rule.date_end }}")'>Edit</button>
+                            onclick='editRowModal("{{ rule.id }}", "{{ rule.name }}", "{{ rule.label_id }}", "{{ rule.percentage }}", "{% if let Some(r) = rule.category_id %}{{ r }}{% endif %}", "{{ rule.regexpr }}", "{{ rule.date_start }}", "{{ rule.date_end }}")'>Edit</button>
                         <button class="btn btn-ghost btn-sm" onclick='deleteRow("{{ rule.id }}", this)'>Delete</button>
                     </div>
                 </div>
@@ -90,7 +90,11 @@
 
                 <div class="form-row">
                     <label for="edit-rule-label">Rule Label</label>
-                    <input id="edit-rule-label" type="text" name="label" required>
+                    <select id="edit-rule-label" name="label_id" required>
+                        {% for label in labels %}
+                        <option value="{{ label.id }}">{{ label.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <div class="form-row">
@@ -171,10 +175,10 @@
 </script>
 
 <script type="module">
-    function editRowModal(id, name, label, percentage, category_id, regexpr, date_start, date_end) {
+    function editRowModal(id, name, label_id, percentage, category_id, regexpr, date_start, date_end) {
         document.getElementById("edit-rule-id").value = id;
         document.getElementById("edit-rule-name").value = name;
-        document.getElementById("edit-rule-label").value = label;
+        document.getElementById("edit-rule-label").value = Number(label_id);
         document.getElementById("edit-rule-percentage").value = percentage;
         document.getElementById("edit-rule-category").value = category_id;
         document.getElementById("edit-rule-regexpr").value = regexpr || "";

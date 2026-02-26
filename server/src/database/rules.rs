@@ -29,7 +29,7 @@ pub async fn get_rules_with_categories(
 pub async fn create_rule(
     db: &DatabaseConnection,
     name: String,
-    label: String,
+    label_id: i32,
     percentage: f32,
     category_id: i32,
     regexpr: Option<String>,
@@ -38,7 +38,7 @@ pub async fn create_rule(
 ) -> anyhow::Result<rule::Model> {
     let active_model = rule::ActiveModel {
         name: Set(name),
-        label: Set(label),
+        label_id: Set(label_id),
         percentage: Set(percentage),
         category_id: Set(category_id),
         regexpr: Set(regexpr),
@@ -87,7 +87,7 @@ pub async fn edit_rule(
     db: &DatabaseConnection,
     id: i32,
     name: String,
-    label: String,
+    label_id: i32,
     percentage: f32,
     category_id: i32,
     regexpr: Option<String>,
@@ -101,7 +101,7 @@ pub async fn edit_rule(
         .into();
 
     active_model.name = Set(name);
-    active_model.label = Set(label);
+    active_model.label_id = Set(label_id);
     active_model.percentage = Set(percentage);
     active_model.category_id = Set(category_id);
     active_model.regexpr = Set(regexpr);

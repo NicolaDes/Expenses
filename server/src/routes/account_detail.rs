@@ -1,7 +1,8 @@
 use crate::{
     database::{
         account::Model as AccountModel,
-        accounts, budgets, category, settingss,
+        accounts, budgets, category, labels, settingss,
+        entities::label,
         transaction::{self},
     },
     routes::{common::DateRange, report::get_splittable_expenses_report},
@@ -146,18 +147,31 @@ pub async fn get_account_detail(
         .expect("Errore DB");
 
     // TODO: Move into database modules
-    let tags = transaction::Entity::find()
+    let tag_label_ids: Vec<Option<i32>> = transaction::Entity::find()
         .filter(transaction::Column::AccountId.eq(account_id))
         .filter(transaction::Column::Date.gt(start_of_year))
+        .filter(transaction::Column::LabelId.is_not_null())
         .select_only()
-        .column_as(transaction::Column::Label, "label")
+        .column(transaction::Column::LabelId)
         .distinct()
-        .into_tuple::<(String,)>()
+        .into_tuple::<(Option<i32>,)>()
         .all(&db)
         .await
         .unwrap()
         .into_iter()
-        .map(|(label,)| label)
+        .map(|(id,)| id)
+        .collect();
+
+    let ids: Vec<i32> = tag_label_ids.into_iter().flatten().collect();
+
+    let tags: Vec<String> = label::Entity::find()
+        .filter(label::Column::Id.is_in(ids))
+        .order_by_asc(label::Column::Name)
+        .all(&db)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|l| l.name)
         .collect();
 
     let html = AccountDetailTemplate {
@@ -528,6 +542,24 @@ pub async fn get_tag_analysis_report(
     let mut monthly_labels = vec![];
     let mut monthly_values = vec![];
 
+    // Resolve label name to ID
+    let label_record = labels::get_label_by_name(&db, &tag)
+        .await
+        .map_err(|e| {
+            eprintln!("Error finding label '{}': {:?}", tag, e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    let label_id = match label_record {
+        Some(l) => l.id,
+        None => {
+            return Ok(Json(CategoryChartData {
+                labels: vec![],
+                values: vec![],
+            }))
+        }
+    };
+
     let start_date = chrono::NaiveDate::parse_from_str(&range.start, "%Y-%m-%d")
         .map_err(|_| StatusCode::BAD_REQUEST)?;
     let end_date = chrono::NaiveDate::parse_from_str(&range.end, "%Y-%m-%d")
@@ -536,7 +568,7 @@ pub async fn get_tag_analysis_report(
     // TODO: Move into database modules
     let transactions = transaction::Entity::find()
         .filter(transaction::Column::AccountId.eq(account_id))
-        .filter(transaction::Column::Label.eq(tag))
+        .filter(transaction::Column::LabelId.eq(label_id))
         .filter(transaction::Column::Date.between(start_date, end_date))
         .order_by_asc(transaction::Column::Date)
         .find_with_related(category::Entity)

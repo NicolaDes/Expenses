@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Labels{% endblock %}
+{% block content %}
+
+<div class="cards-dashboard">
+    <div class="card card-area-main card-large">
+        <div class="card-header">
+            <input type="text" id="table-global-filter" class="search-input" placeholder="🔍 Find Labels..." />
+            <button id="open-hidden-modal" class="btn btn-ghost btn-sm">
+                <span class="btn-icon">+</span>
+            </button>
+        </div>
+        <div class="card-body table-management">
+            <div id="table">
+                <div id="header" class="table-header">
+                    <div class="table-col span-6 sortable" data-field="name">
+                        Name
+                        <span class="sort-indicator">↕</span>
+                    </div>
+                </div>
+
+                {% for label in labels %}
+                <div class="table-row">
+                    <div class="table-col span-6" data-field="name">{{ label.name }}</div>
+                    <div class="table-actions">
+                        <button class="btn btn-ghost btn-sm" onclick='deleteRow("{{ label.id }}", this)'>Delete</button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="table-pagination">
+                <button id="prev-btn" class="btn btn-ghost btn-sm">Previous</button>
+                <span id="page-info" class="page-info"></span>
+                <button id="next-btn" class="btn btn-ghost btn-sm">Next</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="hidden-modal" class="modal hidden">
+    <div class="card card-elevated modal-card">
+        <div class="card-header">
+            <h2>Add new label</h2>
+            <button id="close-hidden-modal" class="btn btn-ghost btn-icon-only">×</button>
+        </div>
+        <div class="card-body">
+            <form class="minimal-form" method="post" action="/labels">
+                <div class="form-row">
+                    <label for="label-name">Name</label>
+                    <input id="label-name" type="text" name="name" required>
+                </div>
+                <div class="form-row">
+                    <button type="submit" class="btn btn-ghost btn-sm">Add Label</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initHiddenModal } from "/static/js/modals.js";
+    initHiddenModal("open-hidden-modal", "hidden-modal", "close-hidden-modal");
+</script>
+
+<script type="module">
+    import { CardsList } from "/static/js/table.js";
+    document.addEventListener("DOMContentLoaded", () => {
+        window.cardsList = new CardsList({
+            tableSelector: '#table',
+            headerSelector: '#header',
+            searchInputId: 'table-global-filter',
+            pageInfoId: 'page-info',
+            perPage: 10
+        });
+        document.getElementById("prev-btn").addEventListener("click", () => cardsList.prevPage());
+        document.getElementById("next-btn").addEventListener("click", () => cardsList.nextPage());
+    });
+</script>
+
+<script type="module">
+    function deleteRow(id, btn) {
+        const row = btn.closest('.table-row');
+        if (!row) return;
+        const confirmed = confirm("Sei sicuro di voler eliminare questa label?");
+        if (!confirmed) return;
+        fetch(`/labels/${id}`, { method: 'DELETE' })
+            .then(res => {
+                if (!res.ok) return res.text().then(t => { throw new Error(t || "Errore eliminazione"); });
+                cardsList.deleteCard(row);
+            })
+            .catch(err => alert(err.message));
+    }
+    window.deleteRow = deleteRow;
+</script>
+
+{% endblock %}

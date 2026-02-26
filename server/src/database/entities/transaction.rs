@@ -12,7 +12,7 @@ pub struct Model {
     pub description: String,
     pub date: DateTime,
     pub perc_to_exclude: f32,
-    pub label: String,
+    pub label_id: Option<i32>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -29,6 +29,12 @@ pub enum Relation {
         to = "super::category::Column::Id"
     )]
     Category,
+    #[sea_orm(
+        belongs_to = "super::label::Entity",
+        from = "Column::LabelId",
+        to = "super::label::Column::Id"
+    )]
+    Label,
 }
 
 impl ActiveModelBehavior for ActiveModel {}
@@ -42,5 +48,11 @@ impl Related<account::Entity> for Entity {
 impl Related<super::category::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Category.def()
+    }
+}
+
+impl Related<super::label::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Label.def()
     }
 }

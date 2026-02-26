@@ -15,7 +15,7 @@ pub async fn create_transaction(
     description: String,
     date: chrono::NaiveDateTime,
     perc_to_exclude: f32,
-    label: String,
+    label_id: Option<i32>,
 ) -> anyhow::Result<transaction::Model> {
     let active_model = transaction::ActiveModel {
         account_id: Set(account_id),
@@ -24,7 +24,7 @@ pub async fn create_transaction(
         description: Set(description),
         date: Set(date),
         perc_to_exclude: Set(perc_to_exclude),
-        label: Set(label),
+        label_id: Set(label_id),
         ..Default::default()
     };
 
@@ -59,7 +59,7 @@ pub async fn edit_transaction(
     description: String,
     date: String,
     perc_to_exclude: f32,
-    label: String,
+    label_id: Option<i32>,
 ) -> anyhow::Result<transaction::Model> {
     let mut active_model: transaction::ActiveModel = transaction::Entity::find_by_id(id)
         .one(db)
@@ -79,7 +79,7 @@ pub async fn edit_transaction(
     }
 
     active_model.perc_to_exclude = Set(perc_to_exclude);
-    active_model.label = Set(label);
+    active_model.label_id = Set(label_id);
 
     let model = transaction::Entity::update(active_model)
         .exec(db)

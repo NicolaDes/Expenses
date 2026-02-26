@@ -8,6 +8,7 @@ use tower_http::services::ServeDir;
 
 use crate::routes::{
     account_budgets::{add_budget_handler, get_account_budgets_handler},
+    labels::{create_label_handler, delete_label_handler, get_labels_handler},
     account_detail::{
         get_account_detail, get_category_analysis_report, get_chart_data, get_expenses_report,
         get_tag_analysis_report,
@@ -100,6 +101,12 @@ pub fn category_routers() -> Router {
         .route("/{category_id}", post(edit_category))
 }
 
+pub fn label_routers() -> Router {
+    Router::new()
+        .route("/", get(get_labels_handler).post(create_label_handler))
+        .route("/{label_id}", delete(delete_label_handler))
+}
+
 pub fn rule_routers() -> Router {
     Router::new()
         .route("/", get(get_rules_handler))
@@ -136,6 +143,7 @@ pub fn router() -> Router {
         .route("/", get(root_redirect))
         .nest("/accounts", account_routers())
         .nest("/categories", category_routers())
+        .nest("/labels", label_routers())
         .nest("/rules", rule_routers())
         .nest("/budgets", budget_routers())
         .nest("/transactions", transaction_routers())

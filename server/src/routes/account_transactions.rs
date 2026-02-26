@@ -1,6 +1,6 @@
 use crate::database::{
-    accounts, categories, transactions,
-    entities::{account, transaction},
+    accounts, categories, labels, transactions,
+    entities::{account, label, transaction},
     category,
 };
 use askama::Template;
@@ -18,6 +18,7 @@ use serde::Deserialize;
 struct TransactionWithCategory {
     txt: transaction::Model,
     category_name: String,
+    label_name: String,
 }
 
 #[derive(Template)]
@@ -26,6 +27,7 @@ struct AccountTransactionsTemplate<'a> {
     account: account::Model,
     transactions: Vec<TransactionWithCategory>,
     categories: Vec<category::Model>,
+    labels: Vec<label::Model>,
     menu: &'a str,
     sub_menu: &'a str,
 }
@@ -35,7 +37,8 @@ pub struct AddTransactionForm {
     description: String,
     value: f64,
     perc_to_exclude: f32,
-    label: String,
+    #[serde(deserialize_with = "empty_string_as_none")]
+    label_id: Option<i32>,
     date: String,
     #[serde(deserialize_with = "empty_string_as_none")]
     category_id: Option<i32>,
@@ -74,6 +77,16 @@ pub async fn get_account_transactions_handler(
                 StatusCode::INTERNAL_SERVER_ERROR
             })?;
 
+    let all_labels = labels::get_all_labels(&db).await.map_err(|e| {
+        eprintln!("Error retrieving labels: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    let label_map: std::collections::HashMap<i32, String> = all_labels
+        .iter()
+        .map(|l| (l.id, l.name.clone()))
+        .collect();
+
     let transaction_list: Vec<TransactionWithCategory> = txs_with_cats
         .into_iter()
         .map(|(txt, cats)| {
@@ -82,8 +95,12 @@ pub async fn get_account_transactions_handler(
                 .next()
                 .map(|c| c.category)
                 .unwrap_or_else(|| "-".to_string());
-
-            TransactionWithCategory { txt, category_name }
+            let label_name = txt
+                .label_id
+                .and_then(|id| label_map.get(&id))
+                .cloned()
+                .unwrap_or_default();
+            TransactionWithCategory { txt, category_name, label_name }
         })
         .collect();
 
@@ -96,6 +113,7 @@ pub async fn get_account_transactions_handler(
         account: account_data,
         transactions: transaction_list,
         categories,
+        labels: all_labels,
         menu: "accounts",
         sub_menu: "transactions",
     };
@@ -122,7 +140,7 @@ pub async fn add_transaction_handler(
         form.description,
         naive_date,
         form.perc_to_exclude,
-        form.label,
+        form.label_id,
     )
     .await
     .map_err(|e| {

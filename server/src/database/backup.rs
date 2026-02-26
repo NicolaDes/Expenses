@@ -3,12 +3,13 @@ use sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
 
 use crate::database::{
-    account, account_rule, budget, category, rule, settings, settings_excluded_category,
+    account, account_rule, budget, category, label, rule, settings, settings_excluded_category,
     transaction,
 };
 
 #[derive(Serialize, Deserialize)]
 pub struct FullBackupDTO {
+    pub labels: Vec<LabelDTO>,
     pub accounts: Vec<AccountDTO>,
     pub budgets: Vec<BudgetDTO>,
     pub transactions: Vec<TransactionDTO>,
@@ -18,6 +19,12 @@ pub struct FullBackupDTO {
     pub settings: Vec<AccountSettingsDTO>,
     #[serde(rename = "exlcuded_categories")]
     pub excluded_categories: Vec<SettingsExcludedCategoriesDTO>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct LabelDTO {
+    pub id: i32,
+    pub name: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -43,14 +50,14 @@ pub struct TransactionDTO {
     pub description: String,
     pub date: DateTime<chrono::Utc>,
     pub perc_to_exclude: f32,
-    pub label: String,
+    pub label_id: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct RuleDTO {
     pub id: i32,
     pub name: String,
-    pub label: String,
+    pub label_id: i32,
     pub percentage: f32,
     pub category_id: i32,
     pub regexpr: Option<String>,
@@ -93,6 +100,12 @@ pub struct SettingsExcludedCategoriesDTO {
 }
 
 pub async fn get_full_backup(db: &DatabaseConnection) -> anyhow::Result<String> {
+    let labels_model = label::Entity::find().all(db).await?;
+    let labels_dto: Vec<LabelDTO> = labels_model
+        .into_iter()
+        .map(|l| LabelDTO { id: l.id, name: l.name })
+        .collect();
+
     let accounts_model = account::Entity::find().all(db).await?;
     let accounts_dto: Vec<AccountDTO> = accounts_model
         .into_iter()
@@ -124,7 +137,7 @@ pub async fn get_full_backup(db: &DatabaseConnection) -> anyhow::Result<String> 
             description: t.description,
             date: DateTime::from_naive_utc_and_offset(t.date, Utc),
             perc_to_exclude: t.perc_to_exclude,
-            label: t.label,
+            label_id: t.label_id,
         })
         .collect();
 
@@ -134,7 +147,7 @@ pub async fn get_full_backup(db: &DatabaseConnection) -> anyhow::Result<String> 
         .map(|r| RuleDTO {
             id: r.id,
             name: r.name,
-            label: r.label,
+            label_id: r.label_id,
             percentage: r.percentage,
             category_id: r.category_id,
             regexpr: r.regexpr,
@@ -190,6 +203,7 @@ pub async fn get_full_backup(db: &DatabaseConnection) -> anyhow::Result<String> 
         .collect();
 
     let backup = FullBackupDTO {
+        labels: labels_dto,
         accounts: accounts_dto,
         budgets: budgets_dto,
         transactions: transactions_dto,
