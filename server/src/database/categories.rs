@@ -1,16 +1,44 @@
 use crate::database::entities::category;
 use anyhow::Context;
-use sea_orm::{ActiveValue::Set, DatabaseConnection, EntityTrait};
+use sea_orm::{ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 
 pub async fn get_categories(db: &DatabaseConnection) -> anyhow::Result<Vec<category::Model>> {
     let models = category::Entity::find().all(db).await?;
     Ok(models)
 }
 
-// pub async fn get_category(db: &DatabaseConnection, id: i32) -> anyhow::Result<category::Model> {
-//     let model = category::Entity::find_by_id(id).one(db).await?.unwrap();
-//     Ok(model)
-// }
+pub async fn get_categories_excluding(
+    db: &DatabaseConnection,
+    excluded_ids: Vec<i32>,
+) -> anyhow::Result<Vec<category::Model>> {
+    let models = category::Entity::find()
+        .filter(category::Column::Id.is_not_in(excluded_ids))
+        .all(db)
+        .await?;
+    Ok(models)
+}
+
+pub async fn get_categories_by_names(
+    db: &DatabaseConnection,
+    names: Vec<String>,
+) -> anyhow::Result<Vec<category::Model>> {
+    let models = category::Entity::find()
+        .filter(category::Column::Category.is_in(names))
+        .all(db)
+        .await?;
+    Ok(models)
+}
+
+pub async fn get_category(
+    db: &DatabaseConnection,
+    id: i32,
+) -> anyhow::Result<category::Model> {
+    let model = category::Entity::find_by_id(id)
+        .one(db)
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("Category {} not found", id))?;
+    Ok(model)
+}
 
 pub async fn create_category(
     db: &DatabaseConnection,
@@ -55,9 +83,8 @@ pub async fn edit_category(
 ) -> anyhow::Result<category::Model> {
     let mut active_model: category::ActiveModel = category::Entity::find_by_id(id)
         .one(db)
-        .await
-        .expect("Error reading the category!")
-        .unwrap()
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("Category {} not found", id))?
         .into();
 
     active_model.transaction_type = Set(transaction_type);

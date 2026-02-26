@@ -8,7 +8,10 @@ pub async fn get_accounts(db: &DatabaseConnection) -> anyhow::Result<Vec<account
 }
 
 pub async fn get_account(db: &DatabaseConnection, id: i32) -> anyhow::Result<account::Model> {
-    let model = account::Entity::find_by_id(id).one(db).await?.unwrap();
+    let model = account::Entity::find_by_id(id)
+        .one(db)
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("Account {} not found", id))?;
     Ok(model)
 }
 

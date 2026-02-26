@@ -1,6 +1,7 @@
 use crate::database::{
-    category,
+    accounts, categories, transactions,
     entities::{account, transaction},
+    category,
 };
 use askama::Template;
 use axum::{
@@ -10,9 +11,7 @@ use axum::{
     Form,
 };
 use chrono::NaiveDateTime;
-use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
-};
+use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 
 #[derive(Debug)]
@@ -62,29 +61,20 @@ pub async fn get_account_transactions_handler(
     Path(account_id): Path<i32>,
     Extension(db): Extension<DatabaseConnection>,
 ) -> Result<Html<String>, StatusCode> {
-    // TODO: Move into database modules
-    let account_data = account::Entity::find_by_id(account_id)
-        .one(&db)
-        .await
-        .map_err(|e| {
-            eprintln!("Errore nel recupero account: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?
-        .ok_or(StatusCode::NOT_FOUND)?;
+    let account_data = accounts::get_account(&db, account_id).await.map_err(|e| {
+        eprintln!("Error retrieving account: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
-    // TODO: Move into database modules
-    let txs_with_cats = transaction::Entity::find()
-        .filter(transaction::Column::AccountId.eq(account_id))
-        .find_with_related(category::Entity)
-        .all(&db)
-        .await
-        .map_err(|e| {
-            eprintln!("Errore find_with_related: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+    let txs_with_cats =
+        transactions::get_transactions_with_categories_for_account(&db, account_id)
+            .await
+            .map_err(|e| {
+                eprintln!("Error retrieving transactions with categories: {:?}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
 
-    // TODO: Move into database modules
-    let transactions: Vec<TransactionWithCategory> = txs_with_cats
+    let transaction_list: Vec<TransactionWithCategory> = txs_with_cats
         .into_iter()
         .map(|(txt, cats)| {
             let category_name = cats
@@ -97,24 +87,23 @@ pub async fn get_account_transactions_handler(
         })
         .collect();
 
-    // TODO: Move into database modules
-    let categories = match category::Entity::find().all(&db).await {
-        Ok(cats) => cats,
-        Err(e) => {
-            println!("Errore find categories: {:?}", e);
-            return Err(axum::http::StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
+    let categories = categories::get_categories(&db).await.map_err(|e| {
+        eprintln!("Error retrieving categories: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     let html = AccountTransactionsTemplate {
         account: account_data,
-        transactions,
+        transactions: transaction_list,
         categories,
         menu: "accounts",
         sub_menu: "transactions",
     };
 
-    Ok(Html(html.render().unwrap()))
+    html.render().map(Html).map_err(|e| {
+        eprintln!("Template render error: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })
 }
 
 pub async fn add_transaction_handler(
@@ -125,22 +114,21 @@ pub async fn add_transaction_handler(
     let naive_date = NaiveDateTime::parse_from_str(&form.date, "%Y-%m-%dT%H:%M")
         .map_err(|_| axum::http::StatusCode::BAD_REQUEST)?;
 
-    let new_tx = transaction::ActiveModel {
-        account_id: Set(account_id),
-        category_id: Set(form.category_id),
-        description: Set(form.description),
-        value: Set(form.value),
-        perc_to_exclude: Set(form.perc_to_exclude),
-        label: Set(form.label),
-        date: Set(naive_date),
-        ..Default::default()
-    };
-
-    // TODO: Move into database modules
-    if let Err(e) = new_tx.insert(&db).await {
-        eprintln!("Errore inserimento transaction: {:?}", e);
-        return Err(axum::http::StatusCode::BAD_REQUEST);
-    }
+    transactions::create_transaction(
+        &db,
+        account_id,
+        form.category_id,
+        form.value,
+        form.description,
+        naive_date,
+        form.perc_to_exclude,
+        form.label,
+    )
+    .await
+    .map_err(|e| {
+        eprintln!("Error inserting transaction: {:?}", e);
+        axum::http::StatusCode::BAD_REQUEST
+    })?;
 
     Ok(Redirect::to(&format!(
         "/accounts/{}/transactions",

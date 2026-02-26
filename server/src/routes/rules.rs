@@ -74,7 +74,10 @@ pub async fn get_rules_handler(
         categories,
         menu: "rules",
     };
-    Ok(axum::response::Html(html.render().unwrap()))
+    Ok(axum::response::Html(
+        html.render()
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
+    ))
 }
 
 pub async fn delete_rule(

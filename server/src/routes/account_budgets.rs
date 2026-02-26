@@ -44,7 +44,10 @@ pub async fn get_account_budgets_handler(
         menu: "accounts",
         sub_menu: "budgets",
     };
-    Ok(axum::response::Html(html.render().unwrap()))
+    Ok(axum::response::Html(
+        html.render()
+            .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?,
+    ))
 }
 
 pub async fn add_budget_handler(

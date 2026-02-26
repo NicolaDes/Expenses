@@ -12,12 +12,12 @@ use sea_orm::{
 use serde::Serialize;
 use serde_json::from_slice;
 
-use crate::{
-    database::{
-        account_rule, budget, category, entities::account, rule, settings,
-        settings_excluded_category, transaction,
-    },
-    routes::backup::{get_full_backup, FullBackupDTO},
+use crate::database::{
+    account_rule,
+    backup::{get_full_backup, FullBackupDTO},
+    budget, category,
+    entities::account,
+    rule, settings, settings_excluded_category, transaction,
 };
 
 #[derive(Template)]
@@ -63,13 +63,19 @@ pub async fn get_utilities_handler(
 ) -> Result<Html<String>, StatusCode> {
     let html = AccountRulesTemplate { menu: "utilities" };
 
-    Ok(Html(html.render().unwrap()))
+    Ok(Html(
+        html.render()
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
+    ))
 }
 
 pub async fn get_backup_handler(Extension(db): Extension<DatabaseConnection>) -> Response {
     let json_backup = match get_full_backup(&db).await {
         Ok(json) => json,
-        Err(status) => return status.into_response(),
+        Err(e) => {
+            eprintln!("Errore generando backup: {:?}", e);
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
     };
 
     Response::builder()
@@ -299,7 +305,7 @@ pub async fn restore_full_backup(
         summary.settings += 1;
     }
 
-    for ec in backup.exlcuded_categories {
+    for ec in backup.excluded_categories {
         rollback_on_err!(
             settings_excluded_category::ActiveModel {
                 id: Set(ec.id),

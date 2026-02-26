@@ -43,7 +43,10 @@ pub async fn get_categories_handler(
         categories,
         menu: "categories",
     };
-    Ok(axum::response::Html(html.render().unwrap()))
+    Ok(axum::response::Html(
+        html.render()
+            .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?,
+    ))
 }
 
 pub async fn add_category_handler(

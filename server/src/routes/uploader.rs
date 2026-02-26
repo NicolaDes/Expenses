@@ -6,13 +6,11 @@ use axum::{
 };
 use calamine::{Reader, Xls, Xlsx};
 use chrono::{Duration, NaiveDate};
-use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
-};
+use sea_orm::DatabaseConnection;
 use serde::Serialize;
 use std::io::Cursor;
 
-use crate::database::{settings, transaction};
+use crate::database::{settingss, transactions};
 
 #[derive(Serialize)]
 struct ImportSummary {
@@ -154,30 +152,43 @@ pub async fn upload_transaction_file(
     Extension(db): Extension<DatabaseConnection>,
     mut multipart: Multipart,
 ) -> impl IntoResponse {
-    let mut transactions = Vec::new();
+    let mut transaction_data = Vec::new();
     let mut processed_transactions = 0;
 
-    let settings = settings::Entity::find()
-        .filter(settings::Column::AccountId.eq(account_id))
-        .one(&db)
-        .await
-        .expect("Errore nel recupero di settings!")
-        .unwrap();
+    let settings = match settingss::get_settings_for_account(&db, account_id).await {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("Error retrieving settings: {:?}", e);
+            return (StatusCode::INTERNAL_SERVER_ERROR, "Error retrieving settings").into_response();
+        }
+    };
 
     let date_index: usize = settings.date_index as usize;
     let description_index: usize = settings.description_index as usize;
     let value_index: usize = settings.value_index as usize;
-    let starter_string: &String = &settings.starter_string;
+    let starter_string = settings.starter_string.clone();
 
-    while let Some(field) = multipart.next_field().await.unwrap() {
+    while let Some(field) = match multipart.next_field().await {
+        Ok(f) => f,
+        Err(e) => {
+            eprintln!("Error reading multipart field: {:?}", e);
+            return (StatusCode::BAD_REQUEST, "Error reading uploaded file").into_response();
+        }
+    } {
         let filename = field
             .file_name()
             .map(|s| s.to_string())
             .unwrap_or_else(|| "file".to_string());
 
-        let data = field.bytes().await.unwrap();
+        let data = match field.bytes().await {
+            Ok(d) => d,
+            Err(e) => {
+                eprintln!("Error reading file bytes: {:?}", e);
+                return (StatusCode::BAD_REQUEST, "Error reading file bytes").into_response();
+            }
+        };
 
-        let parsed_transactions = if filename.ends_with(".csv") {
+        let parsed = if filename.ends_with(".csv") {
             process_csv(
                 &data,
                 date_index,
@@ -208,8 +219,8 @@ pub async fn upload_transaction_file(
             return (StatusCode::BAD_REQUEST, "Formato non supportato").into_response();
         };
 
-        match parsed_transactions {
-            Ok(new_txts) => transactions.extend(new_txts),
+        match parsed {
+            Ok(new_txts) => transaction_data.extend(new_txts),
             Err(e) => {
                 eprintln!("Errore import file {}: {:?}", filename, e);
                 return (StatusCode::INTERNAL_SERVER_ERROR, "Errore import file").into_response();
@@ -217,18 +228,20 @@ pub async fn upload_transaction_file(
         }
     }
 
-    for transaction in transactions {
-        let model = transaction::ActiveModel {
-            account_id: Set(account_id),
-            description: Set(transaction.description),
-            value: Set(transaction.value),
-            date: Set(transaction.date.into()),
-            perc_to_exclude: Set(0.0),
-            label: Set("".to_owned()),
-            ..Default::default()
-        };
-
-        if let Err(e) = model.insert(&db).await {
+    for tx in transaction_data {
+        let naive_dt: chrono::NaiveDateTime = tx.date.into();
+        if let Err(e) = transactions::create_transaction(
+            &db,
+            account_id,
+            None,
+            tx.value,
+            tx.description,
+            naive_dt,
+            0.0,
+            "".to_owned(),
+        )
+        .await
+        {
             eprintln!("Errore nell'inserimento della transazione: {:?}", e);
             continue;
         }
