@@ -26,5 +26,5 @@ target
 .database-data/
 
 .vscode/
-.todos/
+todos/
 .claude/

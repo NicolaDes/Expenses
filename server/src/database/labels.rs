@@ -17,6 +17,7 @@ pub async fn create_label(
     db: &DatabaseConnection,
     name: String,
 ) -> anyhow::Result<label::Model> {
+    anyhow::ensure!(!name.trim().is_empty(), "Label name cannot be empty");
     let active_model = label::ActiveModel {
         name: Set(name),
         ..Default::default()

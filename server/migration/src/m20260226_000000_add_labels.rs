@@ -82,7 +82,18 @@ impl MigrationTrait for Migration {
         )
         .await?;
 
-        // 8. Make rules.label_id NOT NULL
+        // 8. Make rules.label_id NOT NULL (safe because step 3 inserted all distinct labels
+        //    from rules and step 7 mapped every row; only fails if rules.label was NULL,
+        //    which the original schema forbids via NOT NULL)
+        conn.execute_unprepared(
+            "DO $$ BEGIN \
+             IF EXISTS (SELECT 1 FROM rules WHERE label_id IS NULL) THEN \
+               RAISE EXCEPTION 'Cannot set rules.label_id NOT NULL: % rows still have NULL', \
+                 (SELECT COUNT(*) FROM rules WHERE label_id IS NULL); \
+             END IF; \
+             END $$",
+        )
+        .await?;
         conn.execute_unprepared("ALTER TABLE rules ALTER COLUMN label_id SET NOT NULL")
             .await?;
 
