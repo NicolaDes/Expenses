@@ -29,6 +29,13 @@ fn excel_number_to_date(excel_number: &str) -> Option<NaiveDate> {
     Some(base_date + Duration::days(n - 2))
 }
 
+fn parse_date(raw: &str) -> Option<NaiveDate> {
+    if let Some(date) = excel_number_to_date(raw) {
+        return Some(date);
+    }
+    NaiveDate::parse_from_str(raw, "%d/%m/%Y").ok()
+}
+
 async fn process_csv(
     _data: &[u8],
     _date_idx: usize,
@@ -67,7 +74,7 @@ async fn process_xlsx(
             let raw_date = values
                 .get(date_idx)
                 .ok_or_else(|| anyhow::anyhow!("date column index {} out of range (row has {} cols)", date_idx, values.len()))?;
-            let date = excel_number_to_date(raw_date)
+            let date = parse_date(raw_date)
                 .ok_or_else(|| anyhow::anyhow!("cannot parse date value {:?}", raw_date))?;
 
             let description = values
@@ -121,7 +128,7 @@ async fn process_xls(
             let raw_date = values
                 .get(date_idx)
                 .ok_or_else(|| anyhow::anyhow!("date column index {} out of range (row has {} cols)", date_idx, values.len()))?;
-            let date = excel_number_to_date(raw_date)
+            let date = parse_date(raw_date)
                 .ok_or_else(|| anyhow::anyhow!("cannot parse date value {:?}", raw_date))?;
 
             let description = values
