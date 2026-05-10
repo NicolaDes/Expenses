@@ -15,7 +15,7 @@ services:
       dockerfile: Dockerfile
     container_name: expenses-backend
     ports:
-      - "7000:7000"
+      - "7001:7000"
     environment:
       - DATABASE_URL=postgres://postgres:postgres@expenses-database:5432/expenses
     depends_on:

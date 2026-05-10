@@ -149,7 +149,6 @@ pub async fn get_account_detail(
     // TODO: Move into database modules
     let tag_label_ids: Vec<Option<i32>> = transaction::Entity::find()
         .filter(transaction::Column::AccountId.eq(account_id))
-        .filter(transaction::Column::Date.gt(start_of_year))
         .filter(transaction::Column::LabelId.is_not_null())
         .select_only()
         .column(transaction::Column::LabelId)
