@@ -75,7 +75,7 @@ async fn process_xlsx(
                 .get(date_idx)
                 .ok_or_else(|| anyhow::anyhow!("date column index {} out of range (row has {} cols)", date_idx, values.len()))?;
             let date = parse_date(raw_date)
-                .ok_or_else(|| anyhow::anyhow!("cannot parse date value {:?}", raw_date))?;
+                .ok_or_else(|| anyhow::anyhow!("cannot parse date value {:?}, row: {:?}", raw_date, row))?;
 
             let description = values
                 .get(description_idx)

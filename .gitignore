@@ -27,4 +27,4 @@ target
 
 .vscode/
 todos/
-.claude/
+.DS_Store
