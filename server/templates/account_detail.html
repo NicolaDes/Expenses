@@ -187,6 +187,23 @@
                     </div>
                     <div class="card-header">
                         <canvas id="categoryAnalyzerChart"></canvas>
+
+                        <div class="stat-card">
+                            <div class="card-header">
+                                <h3>Transaction Counts</h3>
+                            </div>
+                            <div class="card-body">
+                                <span id="categoryAnalyzerStatCounts"></span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="card-header">
+                                <h3>Sum</h3>
+                            </div>
+                            <div class="card-body">
+                                <span id="categoryAnalyzerStatSum"></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -205,6 +222,23 @@
                     </div>
                     <div class="card-header">
                         <canvas id="tagAnalyzerChart"></canvas>
+
+                        <div class="stat-card">
+                            <div class="card-header">
+                                <h3>Transaction Counts</h3>
+                            </div>
+                            <div class="card-body">
+                                <span id="tagAnalyzerStatCounts"></span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="card-header">
+                                <h3>Sum</h3>
+                            </div>
+                            <div class="card-body">
+                                <span id="tagAnalyzerStatSum"></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -352,8 +386,17 @@
 <script type="module">
     import { createLineChart } from "/static/js/charts.js";
 
+    const parseNum = (val) => {
+        const n = Number(val);
+        return isNaN(n) ? 0 : n;
+    };
+
+    const formatEur = (val) => `€ ${parseNum(val).toFixed(2)}`;
+
     const categorySelect = document.getElementById("category_select");
     const categoryChartId = "categoryAnalyzerChart";
+    const categoryAnalyzerStatCountsId = "categoryAnalyzerStatCounts";
+    const categoryAnalyzerStatSumId = "categoryAnalyzerStatSum";
     const accountId = document.body.dataset.accountId;
 
     async function updateCategoryChart() {
@@ -371,6 +414,9 @@
 
             const data = await res.json();
             createLineChart(categoryChartId, data.labels, data.values, "Category analysis");
+
+            document.getElementById(categoryAnalyzerStatCountsId).textContent = data.values.length;
+            document.getElementById(categoryAnalyzerStatSumId).textContent = formatEur(data.values.reduce((acc, num) => acc + num, 0));
         } catch (err) {
             console.error(err);
             alert("Unable to update category chart...");
@@ -393,8 +439,17 @@
 <script type="module">
     import { createLineChart } from "/static/js/charts.js";
 
+    const parseNum = (val) => {
+        const n = Number(val);
+        return isNaN(n) ? 0 : n;
+    };
+
+    const formatEur = (val) => `€ ${parseNum(val).toFixed(2)}`;
+
     const tagSelect = document.getElementById("tag_select");
     const tagChartId = "tagAnalyzerChart";
+    const tagAnalyzerStatCountsId = "tagAnalyzerStatCounts";
+    const tagAnalyzerStatSumId = "tagAnalyzerStatSum";
     const accountId = document.body.dataset.accountId;
 
     async function updateTagChart() {
@@ -412,6 +467,9 @@
 
             const data = await res.json();
             createLineChart(tagChartId, data.labels, data.values, "Tag analysis");
+
+            document.getElementById(tagAnalyzerStatCountsId).textContent = data.values.length;
+            document.getElementById(tagAnalyzerStatSumId).textContent = formatEur(data.values.reduce((acc, num) => acc + num, 0));
         } catch (err) {
             console.error(err);
             alert("Unable to update category chart...");

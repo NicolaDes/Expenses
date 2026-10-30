@@ -222,7 +222,7 @@
                     <select id="edit-transaction-category" name="category_id">
                         <option value="">-- Select a Category --</option>
                         {% for category in categories %}
-                        <option value="{{ category.id }}">{{ category.category }} - {{ category.macro_category }}
+                        <option value="{{ category.id }}">{{ category.macro_category }} - {{ category.category }}
                         </option>
                         {% endfor %}
                     </select>
